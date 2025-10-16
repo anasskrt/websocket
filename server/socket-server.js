@@ -276,6 +276,12 @@ io.on("connection", (socket) => {
   });
 });
 
+const PORT = process.env.PORT || 3001;
+
+httpServer.listen(PORT, () => {
+  console.log(`BoomParty server running on port ${PORT}`);
+  console.log(`http://localhost:3000`);
+});
 
 process.on('SIGTERM', () => {
   console.log('Shutting down server...');
