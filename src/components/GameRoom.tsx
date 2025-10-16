@@ -41,7 +41,13 @@ export default function GameRoom({ user, onLogout }: GameRoomProps) {
 
     socketManager.onError((error: string) => {
       console.error("Socket error:", error);
-      setIsConnected(false);
+      
+      if (error.includes("expulsé")) {
+        alert(error);
+        handleLogout();
+      } else {
+        setIsConnected(false);
+      }
     });
 
     return () => {

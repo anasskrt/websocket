@@ -61,7 +61,7 @@ export default function LoginForm({ onLogin }: LoginFormProps) {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-600 via-blue-600 to-cyan-500 p-4">
       <div className="bg-white/10 backdrop-blur-lg rounded-2xl shadow-2xl p-8 w-full max-w-md border border-white/20">
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-white mb-2">🎮 BoomParty</h1>
+          <h1 className="text-4xl font-bold text-white mb-2">BoomParty</h1>
           <p className="text-white/80">Rejoignez la partie multijoueur</p>
         </div>
 
@@ -94,8 +94,8 @@ export default function LoginForm({ onLogin }: LoginFormProps) {
                   onClick={() => setSelectedAvatar(avatar)}
                   className={`relative p-2 rounded-lg border-2 transition-all hover:scale-105 ${
                     selectedAvatar === avatar
-                      ? 'border-cyan-400 bg-cyan-400/20'
-                      : 'border-white/20 hover:border-white/40'
+                      ? "border-cyan-400 bg-cyan-400/20"
+                      : "border-white/20 hover:border-white/40"
                   }`}
                   disabled={isLoading}
                 >
@@ -105,10 +105,12 @@ export default function LoginForm({ onLogin }: LoginFormProps) {
                     className="w-12 h-12 rounded-lg"
                     onError={(e) => {
                       const target = e.target as HTMLImageElement;
-                      target.style.display = 'none';
+                      target.style.display = "none";
                       const parent = target.parentElement;
                       if (parent) {
-                        parent.innerHTML = `<div class="w-12 h-12 rounded-lg bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center text-white font-bold">${avatar.split('-')[1]}</div>`;
+                        parent.innerHTML = `<div class="w-12 h-12 rounded-lg bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center text-white font-bold">${
+                          avatar.split("-")[1]
+                        }</div>`;
                       }
                     }}
                   />
@@ -135,14 +137,30 @@ export default function LoginForm({ onLogin }: LoginFormProps) {
           >
             {isLoading ? (
               <span className="flex items-center justify-center">
-                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                <svg
+                  className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  ></circle>
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  ></path>
                 </svg>
                 Connexion...
               </span>
             ) : (
-              'Rejoindre la partie'
+              "Rejoindre la partie"
             )}
           </button>
         </form>

@@ -23,17 +23,15 @@ export function createUser(name: string, avatar: string): User {
 }
 
 export function formatTime(date: Date | string): string {
-  // Convert to Date object if it's a string (from WebSocket serialization)
-  const dateObj = typeof date === 'string' ? new Date(date) : date;
-  
-  // Check if it's a valid Date object
+  const dateObj = typeof date === "string" ? new Date(date) : date;
+
   if (!(dateObj instanceof Date) || isNaN(dateObj.getTime())) {
-    return '--:--';
+    return "--:--";
   }
-  
-  return dateObj.toLocaleTimeString('fr-FR', {
-    hour: '2-digit',
-    minute: '2-digit'
+
+  return dateObj.toLocaleTimeString("fr-FR", {
+    hour: "2-digit",
+    minute: "2-digit",
   });
 }
 

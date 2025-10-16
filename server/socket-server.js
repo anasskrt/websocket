@@ -16,8 +16,6 @@ const gameState = {
   messages: [],
 };
 
-const ADMIN_TOKEN = "boom-admin";
-
 function createUser(userData, socketId, isFirstUser) {
   return {
     id: uuidv4(),
@@ -234,13 +232,32 @@ io.on("connection", (socket) => {
       );
 
       if (userToKick) {
-        io.to(userToKick.socketId).emit(
-          "admin:notification",
-          "Vous avez été déconnecté par un administrateur"
-        );
-        io.to(userToKick.socketId).disconnect(true);
+        const socketToKick = io.sockets.sockets.get(userToKick.socketId);
 
-        console.log(`Admin ${admin.name} kicked user ${userToKick.name}`);
+        if (socketToKick) {
+          gameState.users.delete(userToKick.socketId);
+
+          const systemMessage = createMessage(
+            `${userToKick.name} a été expulsé par ${admin.name}`,
+            admin,
+            "system"
+          );
+          gameState.messages.push(systemMessage);
+          io.emit("message:received", systemMessage);
+
+          broadcastUsersList();
+
+          socketToKick.emit(
+            "error",
+            "Vous avez été expulsé par un administrateur"
+          );
+
+          setTimeout(() => {
+            socketToKick.disconnect(true);
+          }, 100);
+
+          console.log(`Admin ${admin.name} kicked user ${userToKick.name}`);
+        }
       }
     } catch (error) {
       console.error("Error in admin:kick:", error);
@@ -276,25 +293,8 @@ io.on("connection", (socket) => {
   });
 });
 
-const PORT = process.env.PORT || 3001;
+const PORT = 3001;
 
 httpServer.listen(PORT, () => {
-  console.log(`BoomParty server running on port ${PORT}`);
-  console.log(`http://localhost:3000`);
-});
-
-process.on('SIGTERM', () => {
-  console.log('Shutting down server...');
-  httpServer.close(() => {
-    console.log('Server closed');
-    process.exit(0);
-  });
-});
-
-process.on('SIGINT', () => {
-  console.log('Shutting down server...');
-  httpServer.close(() => {
-    console.log('Server closed');
-    process.exit(0);
-  });
+  console.log(`BoomParty Chat Socket.io server running on port ${PORT}`);
 });
