@@ -1,31 +1,30 @@
 'use client';
-import { User, GameScore } from '@/lib/types';
-import { formatTime, getAvatarUrl } from '@/lib/utils';
-import { LogOut, Users, Trophy } from 'lucide-react';
+import { User } from "@/lib/types";
+import { formatTime, getAvatarUrl } from "@/lib/utils";
+import { LogOut, Users } from "lucide-react";
 
 interface GameHeaderProps {
   user: User;
-  score: GameScore;
   userCount: number;
   onLogout: () => void;
 }
 
-export default function GameHeader({ user, score, userCount, onLogout }: GameHeaderProps) {
+export default function GameHeader({
+  user,
+  userCount,
+  onLogout,
+}: GameHeaderProps) {
   return (
     <header className="bg-white/10 backdrop-blur-lg border-b border-white/20 sticky top-0 z-50">
       <div className="container mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
-            <h1 className="text-2xl font-bold text-white">🎮 BoomParty</h1>
+            <h1 className="text-2xl font-bold text-white">💬 BoomParty Chat</h1>
             <div className="hidden md:flex items-center space-x-4 text-white/80">
               <div className="flex items-center space-x-2">
                 <Users size={20} />
-                <span>{userCount} joueur{userCount > 1 ? 's' : ''}</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Trophy size={20} />
-                <span className="font-bold text-yellow-300">
-                  {score.global.toLocaleString()} points
+                <span>
+                  {userCount} connecté{userCount > 1 ? "s" : ""}
                 </span>
               </div>
             </div>
@@ -39,10 +38,12 @@ export default function GameHeader({ user, score, userCount, onLogout }: GameHea
                 className="w-8 h-8 rounded-lg"
                 onError={(e) => {
                   const target = e.target as HTMLImageElement;
-                  target.style.display = 'none';
+                  target.style.display = "none";
                   const parent = target.parentElement;
                   if (parent) {
-                    parent.innerHTML += `<div class="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center text-white font-bold text-sm">${user.avatar.split('-')[1]}</div>`;
+                    parent.innerHTML += `<div class="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center text-white font-bold text-sm">${
+                      user.avatar.split("-")[1]
+                    }</div>`;
                   }
                 }}
               />
@@ -73,22 +74,11 @@ export default function GameHeader({ user, score, userCount, onLogout }: GameHea
         <div className="md:hidden mt-4 flex items-center justify-center space-x-6 text-white/80">
           <div className="flex items-center space-x-2">
             <Users size={18} />
-            <span>{userCount} joueur{userCount > 1 ? 's' : ''}</span>
-          </div>
-          <div className="flex items-center space-x-2">
-            <Trophy size={18} />
-            <span className="font-bold text-yellow-300">
-              {score.global.toLocaleString()} points
+            <span>
+              {userCount} connecté{userCount > 1 ? "s" : ""}
             </span>
           </div>
         </div>
-
-        {score.contributors.length > 0 && (
-          <div className="mt-2 text-center text-white/60 text-sm">
-            Dernière action: {score.contributors[score.contributors.length - 1]?.userName} 
-            {' '}à {formatTime(score.lastUpdate)}
-          </div>
-        )}
       </div>
     </header>
   );
