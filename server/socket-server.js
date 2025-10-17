@@ -1,14 +1,17 @@
 const { createServer } = require('http');
 const { Server } = require('socket.io');
 const { v4: uuidv4 } = require('uuid');
+const frenchWords = require("an-array-of-french-words");
+
+const frenchWordsSet = new Set(frenchWords.map((word) => word.toUpperCase()));
 
 const httpServer = createServer();
 const io = new Server(httpServer, {
   cors: {
     origin: "http://localhost:3000",
     methods: ["GET", "POST"],
-    credentials: true
-  }
+    credentials: true,
+  },
 });
 
 const gameState = {
@@ -88,63 +91,80 @@ function validateMessage(content) {
   );
 }
 
-// Syllabes françaises pour le jeu
-const SYLLABES = [
+const COMBINAISONS = [
+  "AB",
+  "AC",
+  "AD",
+  "AG",
+  "AI",
+  "AL",
+  "AM",
+  "AN",
+  "AP",
+  "AR",
+  "AS",
+  "AT",
+  "AU",
+  "AV",
   "BA",
   "BE",
   "BI",
   "BO",
   "BU",
-  "BRA",
-  "BRE",
-  "BRI",
-  "BRO",
-  "BRU",
   "CA",
   "CE",
+  "CH",
   "CI",
   "CO",
+  "CR",
   "CU",
-  "CHA",
-  "CHE",
-  "CHI",
-  "CHO",
-  "CHU",
-  "CRA",
-  "CRE",
-  "CRI",
-  "CRO",
-  "CRU",
   "DA",
   "DE",
   "DI",
   "DO",
   "DU",
-  "DRA",
-  "DRE",
-  "DRI",
-  "DRO",
-  "DRU",
+  "EC",
+  "ED",
+  "EF",
+  "EL",
+  "EM",
+  "EN",
+  "EP",
+  "ER",
+  "ES",
+  "ET",
+  "EU",
+  "EV",
+  "EX",
   "FA",
   "FE",
   "FI",
+  "FL",
   "FO",
+  "FR",
   "FU",
-  "FRA",
-  "FRE",
-  "FRI",
-  "FRO",
-  "FRU",
   "GA",
   "GE",
   "GI",
   "GO",
+  "GR",
   "GU",
-  "GRA",
-  "GRE",
-  "GRI",
-  "GRO",
-  "GRU",
+  "HA",
+  "HE",
+  "HI",
+  "HO",
+  "HU",
+  "ID",
+  "IL",
+  "IM",
+  "IN",
+  "IR",
+  "IS",
+  "IT",
+  "JA",
+  "JE",
+  "JO",
+  "JU",
   "LA",
   "LE",
   "LI",
@@ -160,21 +180,27 @@ const SYLLABES = [
   "NI",
   "NO",
   "NU",
+  "OB",
+  "OC",
+  "OD",
+  "OF",
+  "OI",
+  "OM",
+  "ON",
+  "OP",
+  "OR",
+  "OS",
+  "OU",
+  "OV",
   "PA",
   "PE",
+  "PH",
   "PI",
+  "PL",
   "PO",
+  "PR",
   "PU",
-  "PRA",
-  "PRE",
-  "PRI",
-  "PRO",
-  "PRU",
-  "PLA",
-  "PLE",
-  "PLI",
-  "PLO",
-  "PLU",
+  "QU",
   "RA",
   "RE",
   "RI",
@@ -189,81 +215,244 @@ const SYLLABES = [
   "TE",
   "TI",
   "TO",
+  "TR",
   "TU",
-  "TRA",
-  "TRE",
-  "TRI",
-  "TRO",
-  "TRU",
+  "UN",
+  "UR",
+  "US",
+  "UT",
   "VA",
   "VE",
   "VI",
   "VO",
   "VU",
+  "ZE",
+  "ZO",
+
+  // Combinaisons de 3 lettres très fréquentes
+  "AIR",
+  "ANC",
+  "ANT",
+  "ART",
+  "ATE",
+  "AUX",
+  "BLE",
+  "BRA",
+  "BRE",
+  "BRI",
+  "BRO",
+  "BRU",
+  "CHA",
+  "CHE",
+  "CHI",
+  "CHO",
+  "CHU",
+  "CLA",
+  "COM",
+  "CON",
+  "COU",
+  "CRA",
+  "CRE",
+  "CRI",
+  "DAN",
+  "DER",
+  "DES",
+  "DEV",
+  "DIS",
+  "DIV",
+  "DRA",
+  "DRE",
+  "DRO",
+  "ENT",
+  "ERA",
+  "ERE",
+  "ERI",
+  "ERS",
+  "ERT",
+  "EUR",
+  "EVE",
+  "FER",
+  "FLA",
+  "FLE",
+  "FLO",
+  "FOR",
+  "FRA",
+  "FRE",
+  "FRO",
+  "GRA",
+  "GRE",
+  "GRI",
+  "GRO",
+  "GUE",
+  "HAB",
+  "HAU",
+  "HER",
+  "HOM",
+  "HOR",
+  "INT",
+  "ION",
+  "IRE",
+  "JOU",
+  "JUR",
+  "LAN",
+  "LEU",
+  "LIE",
+  "LOU",
+  "LUM",
+  "MAI",
+  "MAN",
+  "MAR",
+  "MEN",
+  "MER",
+  "MIS",
+  "MON",
+  "MOR",
+  "MOU",
+  "NAT",
+  "NOU",
+  "OBJ",
+  "OIS",
+  "OMB",
+  "OMP",
+  "OND",
+  "ONT",
+  "OPE",
+  "ORT",
+  "OUB",
+  "OUR",
+  "OUT",
+  "OUV",
+  "PAR",
+  "PAS",
+  "PEN",
+  "PER",
+  "PEU",
+  "PLA",
+  "PLE",
+  "PLI",
+  "PLU",
+  "POI",
+  "POR",
+  "POU",
+  "PRA",
+  "PRE",
+  "PRI",
+  "PRO",
+  "QUA",
+  "QUE",
+  "QUI",
+  "RAN",
+  "RAP",
+  "REC",
+  "REN",
+  "REP",
+  "RES",
+  "RET",
+  "REV",
+  "RIE",
+  "ROU",
+  "SAI",
+  "SAN",
+  "SAU",
+  "SEM",
+  "SEN",
+  "SER",
+  "SOU",
+  "SUR",
+  "TAN",
+  "TEM",
+  "TEN",
+  "TER",
+  "TIO",
+  "TOR",
+  "TOU",
+  "TRA",
+  "TRE",
+  "TRI",
+  "TRO",
+  "TRU",
+  "UNI",
+  "VEN",
+  "VER",
+  "VIE",
+  "VIN",
+  "VIR",
+  "VOI",
+  "VOU",
   "VRA",
   "VRE",
-  "VRI",
-  "VRO",
-  "VRU",
-  "ZA",
-  "ZE",
-  "ZI",
-  "ZO",
-  "ZU",
-  "AN",
-  "EN",
-  "IN",
-  "ON",
-  "UN",
-  "AR",
-  "ER",
-  "IR",
-  "OR",
-  "UR",
-  "AL",
-  "EL",
-  "IL",
-  "OL",
-  "UL",
-  "TION",
-  "SION",
-  "MENT",
-  "LEUR",
-  "TURE",
-  "ENCE",
-  "ANCE",
+  "ZON",
 ];
 
+// Créer un cache de syllabes validées (qui ont au moins 10 mots possibles)
+let validatedCombinations = null;
+
+function getValidatedCombinations() {
+  if (validatedCombinations) return validatedCombinations;
+
+  console.log("Validation des combinaisons avec le dictionnaire...");
+  validatedCombinations = COMBINAISONS.filter((combo) => {
+    const wordsWithCombo = Array.from(frenchWordsSet).filter(
+      (word) => word.includes(combo) && word.length >= 4
+    );
+    const isValid = wordsWithCombo.length >= 10;
+    if (isValid) {
+      console.log(`✓ ${combo}: ${wordsWithCombo.length} mots`);
+    }
+    return isValid;
+  });
+
+  console.log(
+    `${validatedCombinations.length}/${COMBINAISONS.length} combinaisons validées`
+  );
+  return validatedCombinations;
+}
+
 function getRandomSyllabe() {
-  return SYLLABES[Math.floor(Math.random() * SYLLABES.length)];
+  const validated = getValidatedCombinations();
+  return validated[Math.floor(Math.random() * validated.length)];
 }
 
 function getRandomTime(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
-// Fonction pour vérifier si un mot existe dans le dictionnaire français
-async function checkWordExists(word) {
-  try {
-    // Utiliser l'API Wiktionary pour vérifier si le mot existe
-    const response = await fetch(
-      `https://fr.wiktionary.org/api/rest_v1/page/summary/${encodeURIComponent(
-        word.toLowerCase()
-      )}`
-    );
+// Fonction pour vérifier si un mot existe dans le dictionnaire français (synchrone)
+function checkWordExists(word) {
+  const normalizedWord = word.toUpperCase().trim();
+  // Vérifier dans notre dictionnaire local
+  return frenchWordsSet.has(normalizedWord);
+}
 
-    if (response.ok) {
-      const data = await response.json();
-      // Vérifier que ce n'est pas une page manquante
-      return data.type !== "no-extract" && data.type !== "standard";
-    }
+// Valider un mot pour le jeu
+function validateWord(word, syllabe, usedWords) {
+  const normalizedWord = word.toUpperCase().trim();
+  const normalizedSyllabe = syllabe.toUpperCase();
 
-    return false;
-  } catch (error) {
-    console.error("Error checking word:", error);
-    // En cas d'erreur de l'API, on accepte le mot pour ne pas bloquer le jeu
-    return true;
+  // 1. Vérifier longueur minimale
+  if (normalizedWord.length < 4) {
+    return { valid: false, reason: "Le mot doit contenir au moins 4 lettres" };
   }
+
+  // 2. Vérifier que le mot contient la combinaison
+  if (!normalizedWord.includes(normalizedSyllabe)) {
+    return {
+      valid: false,
+      reason: `Le mot doit contenir "${syllabe}"`,
+    };
+  }
+
+  // 3. Vérifier que le mot n'a pas déjà été utilisé
+  if (usedWords && usedWords.includes(normalizedWord)) {
+    return { valid: false, reason: "Ce mot a déjà été utilisé" };
+  }
+
+  // 4. Vérifier que le mot existe dans le dictionnaire
+  if (!checkWordExists(normalizedWord)) {
+    return { valid: false, reason: "Ce mot n'existe pas dans le dictionnaire" };
+  }
+
+  return { valid: true };
 }
 
 function initializeGame() {
@@ -404,34 +593,6 @@ function nextPlayer() {
 
   broadcastGameState();
   startBombTimer();
-}
-
-async function validateWord(word, syllabe) {
-  // Check if word contains the syllabe
-  if (!word.toUpperCase().includes(syllabe.toUpperCase())) {
-    return {
-      valid: false,
-      reason: `Le mot doit contenir la syllabe "${syllabe}"`,
-    };
-  }
-
-  // Check if word is too short
-  if (word.length < 3) {
-    return { valid: false, reason: "Le mot doit contenir au moins 3 lettres" };
-  }
-
-  // Check if word was already used
-  if (gameState.game.bombState.usedWords.includes(word.toUpperCase())) {
-    return { valid: false, reason: "Ce mot a déjà été utilisé" };
-  }
-
-  // Check if word exists in dictionary
-  const wordExists = await checkWordExists(word);
-  if (!wordExists) {
-    return { valid: false, reason: "Ce mot n'existe pas dans le dictionnaire" };
-  }
-
-  return { valid: true };
 }
 
 function endGame(winner) {
@@ -752,7 +913,63 @@ io.on("connection", (socket) => {
     }
   });
 
-  socket.on("game:submit-word", async (word) => {
+  socket.on("game:update-settings", (settings) => {
+    try {
+      const admin = gameState.users.get(socket.id);
+      if (!admin || !admin.isAdmin) {
+        socket.emit("error", "Seul l'admin peut modifier les paramètres");
+        return;
+      }
+
+      if (gameState.game.status === "playing") {
+        socket.emit(
+          "error",
+          "Impossible de modifier les paramètres pendant une partie"
+        );
+        return;
+      }
+
+      // Valider les paramètres
+      if (
+        settings.minTime < 5 ||
+        settings.maxTime > 60 ||
+        settings.minTime >= settings.maxTime
+      ) {
+        socket.emit("error", "Paramètres de temps invalides");
+        return;
+      }
+
+      if (settings.startingLives < 1 || settings.startingLives > 10) {
+        socket.emit("error", "Nombre de vies invalide (1-10)");
+        return;
+      }
+
+      // Mettre à jour les paramètres
+      gameState.game.settings = {
+        minTime: settings.minTime,
+        maxTime: settings.maxTime,
+        startingLives: settings.startingLives,
+      };
+
+      // Diffuser la mise à jour
+      broadcastGameState();
+
+      const systemMessage = createMessage(
+        `⚙️ ${admin.name} a modifié les paramètres: ${settings.minTime}-${settings.maxTime}s, ${settings.startingLives} vies`,
+        admin,
+        "system"
+      );
+      gameState.messages.push(systemMessage);
+      io.emit("message:received", systemMessage);
+
+      console.log(`Game settings updated by ${admin.name}:`, settings);
+    } catch (error) {
+      console.error("Error in game:update-settings:", error);
+      socket.emit("error", "Erreur lors de la mise à jour des paramètres");
+    }
+  });
+
+  socket.on("game:submit-word", (word) => {
     try {
       const user = gameState.users.get(socket.id);
       if (!user) {
@@ -770,9 +987,11 @@ io.on("connection", (socket) => {
         return;
       }
 
-      const validation = await validateWord(
+      // Validation synchrone avec le dictionnaire local
+      const validation = validateWord(
         word,
-        gameState.game.bombState.currentLetter
+        gameState.game.bombState.currentLetter,
+        gameState.game.bombState.usedWords
       );
 
       if (!validation.valid) {
@@ -786,10 +1005,11 @@ io.on("connection", (socket) => {
         gameState.messages.push(errorMessage);
         io.emit("message:received", errorMessage);
 
+        // IMPORTANT: Ne pas passer la bombe si le mot est invalide
         return;
       }
 
-      // Word is valid!
+      // Le mot est valide!
       gameState.game.bombState.usedWords.push(word.toUpperCase());
 
       const successMessage = createMessage(
@@ -800,10 +1020,10 @@ io.on("connection", (socket) => {
       gameState.messages.push(successMessage);
       io.emit("message:received", successMessage);
 
-      // Clear bomb timer before moving to next player
+      // Arrêter le timer de la bombe avant de passer au joueur suivant
       clearInterval(gameState.bombTimer);
 
-      // Next player
+      // Passer au joueur suivant
       nextPlayer();
 
       console.log(`${user.name} submitted valid word: ${word}`);

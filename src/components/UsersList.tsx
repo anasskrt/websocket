@@ -40,7 +40,7 @@ export default function UsersList({
         </h3>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 space-y-3">
+      <div className="flex-1 overflow-y-auto p-4 space-y-3 scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent">
         {sortedUsers.map((user) => {
           const isCurrentUser = user.id === currentUser.id;
           const isOnline = true;

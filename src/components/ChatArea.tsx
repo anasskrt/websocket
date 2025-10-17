@@ -49,7 +49,7 @@ export default function ChatArea({ messages, currentUser, onSendMessage }: ChatA
         </h3>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 space-y-3">
+      <div className="flex-1 overflow-y-auto p-4 space-y-3 max-h-[calc(100vh-300px)] scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent">
         {messages.length === 0 ? (
           <div className="text-center py-12">
             <div className="text-white/40 text-6xl mb-3">💬</div>

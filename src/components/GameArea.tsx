@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { User, BoomPartyGame } from "@/lib/types";
 import { Bomb, Zap, Trophy, Heart, Send } from "lucide-react";
 
@@ -9,6 +9,8 @@ interface GameAreaProps {
   onSubmitWord: (word: string) => void;
   onStartGame: () => void;
   onStopGame: () => void;
+  errorMessage?: string;
+  onClearError?: () => void;
 }
 
 export default function GameArea({
@@ -17,9 +19,13 @@ export default function GameArea({
   onSubmitWord,
   onStartGame,
   onStopGame,
+  errorMessage,
+  onClearError,
 }: GameAreaProps) {
   const [wordInput, setWordInput] = useState("");
   const [shakeAnimation, setShakeAnimation] = useState(false);
+  const [errorAnimation, setErrorAnimation] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const isActivePlayer = game.bombState.activePlayerId === currentUser.id;
   const activePlayer = game.players.find(
@@ -27,6 +33,7 @@ export default function GameArea({
   );
   const alivePlayers = game.players.filter((p) => p.isAlive);
 
+  // Animation de la bombe quand le temps est bas
   useEffect(() => {
     if (game.bombState.timeRemaining <= 5 && game.bombState.timeRemaining > 0) {
       setShakeAnimation(true);
@@ -34,6 +41,22 @@ export default function GameArea({
       return () => clearTimeout(timer);
     }
   }, [game.bombState.timeRemaining]);
+
+  // Animation d'erreur et focus sur l'input
+  useEffect(() => {
+    if (errorMessage) {
+      setErrorAnimation(true);
+      // Garder le focus sur l'input
+      inputRef.current?.focus();
+
+      const timer = setTimeout(() => {
+        setErrorAnimation(false);
+        onClearError?.();
+      }, 3000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [errorMessage, onClearError]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -270,14 +293,34 @@ export default function GameArea({
 
         {/* Input pour soumettre un mot */}
         {isActivePlayer && (
-          <form onSubmit={handleSubmit} className="w-full max-w-md">
-            <div className="flex space-x-2">
+          <form onSubmit={handleSubmit} className="w-full max-w-md space-y-3">
+            {/* Message d'erreur avec animation */}
+            {errorMessage && (
+              <div
+                className={`bg-red-500/90 border-2 border-red-400 text-white px-4 py-3 rounded-lg text-center font-medium shadow-lg ${
+                  errorAnimation ? "animate-bounce" : ""
+                }`}
+              >
+                ❌ {errorMessage}
+              </div>
+            )}
+
+            <div
+              className={`flex space-x-2 ${
+                errorAnimation ? "animate-shake" : ""
+              }`}
+            >
               <input
+                ref={inputRef}
                 type="text"
                 value={wordInput}
                 onChange={(e) => setWordInput(e.target.value.toUpperCase())}
                 placeholder="Entrez un mot..."
-                className="flex-1 bg-white/20 border-2 border-white/40 rounded-xl px-6 py-4 text-white placeholder-white/50 text-lg font-medium focus:outline-none focus:border-yellow-400 uppercase"
+                className={`flex-1 bg-white/20 border-2 rounded-xl px-6 py-4 text-white placeholder-white/50 text-lg font-medium focus:outline-none uppercase transition-all ${
+                  errorAnimation
+                    ? "border-red-500 focus:border-red-400"
+                    : "border-white/40 focus:border-yellow-400"
+                }`}
                 autoFocus
               />
               <button
@@ -295,7 +338,7 @@ export default function GameArea({
         {game.bombState.usedWords.length > 0 && (
           <div className="w-full max-w-2xl">
             <p className="text-white/60 text-sm mb-2">Mots déjà utilisés:</p>
-            <div className="flex flex-wrap gap-2 max-h-20 overflow-y-auto">
+            <div className="flex flex-wrap gap-2 max-h-20 overflow-y-auto scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent">
               {game.bombState.usedWords.slice(-10).map((word, index) => (
                 <span
                   key={index}

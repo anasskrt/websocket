@@ -88,6 +88,16 @@ class SocketManager {
     }
   }
 
+  updateGameSettings(settings: {
+    minTime: number;
+    maxTime: number;
+    startingLives: number;
+  }) {
+    if (this.socket) {
+      this.socket.emit("game:update-settings", settings);
+    }
+  }
+
   onUserJoined(callback: (user: User) => void) {
     if (this.socket) {
       this.socket.on("user:joined", callback);

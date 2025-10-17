@@ -11,6 +11,7 @@
     "dev:full": "concurrently \"npm run dev\" \"npm run socket-server\""
   },
   "dependencies": {
+    "an-array-of-french-words": "^2.0.0",
     "clsx": "^2.1.1",
     "lucide-react": "^0.545.0",
     "next": "15.5.5",

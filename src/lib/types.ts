@@ -73,6 +73,11 @@ export interface SocketEvents {
   "game:start": () => void;
   "game:stop": () => void;
   "game:submit-word": (word: string) => void;
+  "game:update-settings": (settings: {
+    minTime: number;
+    maxTime: number;
+    startingLives: number;
+  }) => void;
 
   "user:joined": (user: User) => void;
   "user:left": (userId: string) => void;

@@ -6,6 +6,7 @@ import UsersList from "@/components/UsersList";
 import ChatArea from "@/components/ChatArea";
 import GameArea from "@/components/GameArea";
 import GameHeader from "@/components/GameHeader";
+import GameSettings from "@/components/GameSettings";
 
 interface GameRoomProps {
   user: User;
@@ -16,6 +17,8 @@ export default function GameRoom({ user, onLogout }: GameRoomProps) {
   const [connectedUsers, setConnectedUsers] = useState<User[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
   const [isConnected, setIsConnected] = useState(true);
+  const [wordError, setWordError] = useState<string>("");
+  const [expelledMessage, setExpelledMessage] = useState<string>("");
   const [game, setGame] = useState<BoomPartyGame>({
     isActive: false,
     status: "waiting",
@@ -75,11 +78,22 @@ export default function GameRoom({ user, onLogout }: GameRoomProps) {
     });
 
     socketManager.onWordRejected((reason: string) => {
-      alert(`❌ ${reason}`);
+      setWordError(reason);
     });
 
     socketManager.onError((error: string) => {
       console.error("Socket error:", error);
+      // Si l'erreur contient une indication d'expulsion, afficher un modal
+      const lower = (error || "").toLowerCase();
+      if (
+        lower.includes("expuls") ||
+        lower.includes("expulsé") ||
+        lower.includes("expulse")
+      ) {
+        setExpelledMessage(error);
+        return;
+      }
+
       setIsConnected(false);
     });
 
@@ -122,6 +136,16 @@ export default function GameRoom({ user, onLogout }: GameRoomProps) {
     socketManager.submitWord(word);
   };
 
+  const handleUpdateSettings = (settings: {
+    minTime: number;
+    maxTime: number;
+    startingLives: number;
+  }) => {
+    if (user.isAdmin) {
+      socketManager.updateGameSettings(settings);
+    }
+  };
+
   const handleLogout = () => {
     socketManager.disconnect();
     onLogout();
@@ -148,6 +172,31 @@ export default function GameRoom({ user, onLogout }: GameRoomProps) {
     );
   }
 
+  // Modal d'expulsion
+  if (expelledMessage) {
+    return (
+      <div className="fixed inset-0 flex items-center justify-center bg-black/60 z-50">
+        <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 w-full max-w-md mx-4 text-center">
+          <h2 className="text-2xl font-bold text-white mb-4">
+            Vous avez été expulsé
+          </h2>
+          <p className="text-white/80 mb-6">{expelledMessage}</p>
+          <div className="flex justify-center space-x-4">
+            <button
+              onClick={() => {
+                setExpelledMessage("");
+                handleLogout();
+              }}
+              className="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-6 rounded-lg"
+            >
+              Retour à l'accueil
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-600 via-blue-600 to-cyan-500">
       <GameHeader
@@ -158,7 +207,12 @@ export default function GameRoom({ user, onLogout }: GameRoomProps) {
 
       <div className="container mx-auto px-4 py-6">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 h-[calc(100vh-140px)]">
-          <div className="lg:col-span-1">
+          <div className="lg:col-span-1 overflow-y-auto scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent space-y-4">
+            <GameSettings
+              game={game}
+              isAdmin={user.isAdmin}
+              onUpdateSettings={handleUpdateSettings}
+            />
             <UsersList
               users={connectedUsers}
               currentUser={user}
@@ -174,6 +228,8 @@ export default function GameRoom({ user, onLogout }: GameRoomProps) {
               onSubmitWord={handleSubmitWord}
               onStartGame={handleStartGame}
               onStopGame={handleStopGame}
+              errorMessage={wordError}
+              onClearError={() => setWordError("")}
             />
           </div>
 
