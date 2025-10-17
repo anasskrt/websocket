@@ -1,5 +1,11 @@
 import { io, Socket } from 'socket.io-client';
-import { User, UserLoginData, Message, GameScore } from './types';
+import {
+  User,
+  UserLoginData,
+  Message,
+  GameScore,
+  BoomPartyGame,
+} from "./types";
 
 class SocketManager {
   private socket: Socket | null = null;
@@ -7,16 +13,16 @@ class SocketManager {
 
   connect() {
     if (!this.socket) {
-      this.socket = io('http://localhost:3001', {
-        autoConnect: false
+      this.socket = io("http://localhost:3001", {
+        autoConnect: false,
       });
     }
-    
+
     if (!this.isConnected) {
       this.socket.connect();
       this.isConnected = true;
     }
-    
+
     return this.socket;
   }
 
@@ -29,57 +35,76 @@ class SocketManager {
 
   joinGame(userData: UserLoginData) {
     if (this.socket) {
-      this.socket.emit('user:join', userData);
+      this.socket.emit("user:join", userData);
     }
   }
 
   sendGlobalMessage(content: string) {
     if (this.socket) {
-      this.socket.emit('message:global', content);
+      this.socket.emit("message:global", content);
     }
   }
 
   sendPrivateMessage(content: string, recipientId: string) {
     if (this.socket) {
-      this.socket.emit('message:private', content, recipientId);
+      this.socket.emit("message:private", content, recipientId);
     }
   }
 
   performGameAction(actionType: string, data: unknown) {
     if (this.socket) {
-      this.socket.emit('game:action', actionType, data);
+      this.socket.emit("game:action", actionType, data);
     }
   }
 
   kickUser(userId: string) {
     if (this.socket) {
-      this.socket.emit('admin:kick', userId);
+      this.socket.emit("admin:kick", userId);
     }
   }
 
   resetScore() {
     if (this.socket) {
-      this.socket.emit('admin:reset-score');
+      this.socket.emit("admin:reset-score");
+    }
+  }
+
+  // Game events
+  startGame() {
+    if (this.socket) {
+      this.socket.emit("game:start");
+    }
+  }
+
+  stopGame() {
+    if (this.socket) {
+      this.socket.emit("game:stop");
+    }
+  }
+
+  submitWord(word: string) {
+    if (this.socket) {
+      this.socket.emit("game:submit-word", word);
     }
   }
 
   onUserJoined(callback: (user: User) => void) {
     if (this.socket) {
-      this.socket.on('user:joined', callback);
+      this.socket.on("user:joined", callback);
     }
   }
 
   onUserLeft(callback: (userId: string) => void) {
     if (this.socket) {
-      this.socket.on('user:left', callback);
+      this.socket.on("user:left", callback);
     }
   }
 
   onUsersListUpdate(callback: (users: User[]) => void) {
     if (this.socket) {
-      console.log('Registering users:list listener');
-      this.socket.on('users:list', (users) => {
-        console.log('Received users:list event with', users.length, 'users');
+      console.log("Registering users:list listener");
+      this.socket.on("users:list", (users) => {
+        console.log("Received users:list event with", users.length, "users");
         callback(users);
       });
     }
@@ -87,19 +112,49 @@ class SocketManager {
 
   onMessageReceived(callback: (message: Message) => void) {
     if (this.socket) {
-      this.socket.on('message:received', callback);
+      this.socket.on("message:received", callback);
     }
   }
 
   onScoreUpdated(callback: (score: GameScore) => void) {
     if (this.socket) {
-      this.socket.on('score:updated', callback);
+      this.socket.on("score:updated", callback);
+    }
+  }
+
+  onGameUpdated(callback: (game: BoomPartyGame) => void) {
+    if (this.socket) {
+      this.socket.on("game:updated", callback);
+    }
+  }
+
+  onBombTick(callback: (timeRemaining: number) => void) {
+    if (this.socket) {
+      this.socket.on("game:bomb-tick", callback);
+    }
+  }
+
+  onExplosion(callback: (playerId: string) => void) {
+    if (this.socket) {
+      this.socket.on("game:explosion", callback);
+    }
+  }
+
+  onWordAccepted(callback: (word: string, nextPlayerId: string) => void) {
+    if (this.socket) {
+      this.socket.on("game:word-accepted", callback);
+    }
+  }
+
+  onWordRejected(callback: (reason: string) => void) {
+    if (this.socket) {
+      this.socket.on("game:word-rejected", callback);
     }
   }
 
   onError(callback: (error: string) => void) {
     if (this.socket) {
-      this.socket.on('error', callback);
+      this.socket.on("error", callback);
     }
   }
 

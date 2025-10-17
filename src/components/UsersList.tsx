@@ -15,9 +15,11 @@ export default function UsersList({
   users,
   currentUser,
   onSendPrivateMessage,
+  onKickUser,
 }: UsersListProps) {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [privateMessage, setPrivateMessage] = useState("");
+  const [userToKick, setUserToKick] = useState<User | null>(null);
   const sortedUsers = [...users].sort((a, b) => {
     if (a.isAdmin && !b.isAdmin) return -1;
     if (!a.isAdmin && b.isAdmin) return 1;
@@ -106,6 +108,15 @@ export default function UsersList({
                     title="Envoyer un message privé"
                   >
                     <MessageSquare size={14} />
+                  </button>
+                )}
+                {!isCurrentUser && currentUser.isAdmin && onKickUser && (
+                  <button
+                    onClick={() => setUserToKick(user)}
+                    className="p-1 rounded-full bg-red-500/20 hover:bg-red-500/40 text-red-300 transition-colors"
+                    title="Expulser ce joueur"
+                  >
+                    <UserX size={14} />
                   </button>
                 )}
                 {user.isAdmin && (
@@ -197,6 +208,40 @@ export default function UsersList({
                   </button>
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {userToKick && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white/10 backdrop-blur-lg rounded-2xl border border-white/20 p-6 w-full max-w-md mx-4">
+            <h3 className="text-white font-bold text-lg mb-4 flex items-center space-x-2">
+              <UserX size={20} className="text-red-400" />
+              <span>Expulser un joueur</span>
+            </h3>
+            <p className="text-white/80 mb-6">
+              Êtes-vous sûr de vouloir expulser{" "}
+              <span className="font-bold">{userToKick.name}</span> du chat ?
+            </p>
+            <div className="flex space-x-3">
+              <button
+                onClick={() => setUserToKick(null)}
+                className="flex-1 bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg transition-colors"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={() => {
+                  if (onKickUser) {
+                    onKickUser(userToKick.id);
+                    setUserToKick(null);
+                  }
+                }}
+                className="flex-1 bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg transition-colors"
+              >
+                Expulser
+              </button>
             </div>
           </div>
         </div>

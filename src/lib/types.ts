@@ -5,11 +5,13 @@ export interface User {
   isAdmin: boolean;
   connectedAt: Date;
   lastActivity: Date;
+  lives?: number;
+  isAlive?: boolean;
 }
 
 export interface Message {
   id: string;
-  type: 'global' | 'private' | 'system';
+  type: "global" | "private" | "system";
   content: string;
   sender: User;
   recipient?: User;
@@ -26,6 +28,28 @@ export interface GameScore {
   }[];
 }
 
+export interface BombState {
+  currentLetter: string;
+  timeRemaining: number;
+  maxTime: number;
+  activePlayerId: string | null;
+  usedWords: string[];
+  roundNumber: number;
+}
+
+export interface BoomPartyGame {
+  isActive: boolean;
+  status: "waiting" | "playing" | "finished";
+  players: User[];
+  bombState: BombState;
+  winner: User | null;
+  settings: {
+    minTime: number;
+    maxTime: number;
+    startingLives: number;
+  };
+}
+
 export interface GameState {
   users: User[];
   score: GameScore;
@@ -39,29 +63,41 @@ export interface UserLoginData {
 }
 
 export interface SocketEvents {
-  'user:join': (userData: UserLoginData) => void;
-  'user:disconnect': () => void;
-  'message:global': (content: string) => void;
-  'message:private': (content: string, recipientId: string) => void;
-  'game:action': (actionType: string, data: unknown) => void;
-  'admin:kick': (userId: string) => void;
-  'admin:reset-score': () => void;
-  
-  'user:joined': (user: User) => void;
-  'user:left': (userId: string) => void;
-  'users:list': (users: User[]) => void;
-  'message:received': (message: Message) => void;
-  'score:updated': (score: GameScore) => void;
-  'admin:notification': (message: string) => void;
-  'game:state-changed': (gameState: GameState) => void;
-  'error': (message: string) => void;
+  "user:join": (userData: UserLoginData) => void;
+  "user:disconnect": () => void;
+  "message:global": (content: string) => void;
+  "message:private": (content: string, recipientId: string) => void;
+  "game:action": (actionType: string, data: unknown) => void;
+  "admin:kick": (userId: string) => void;
+  "admin:reset-score": () => void;
+  "game:start": () => void;
+  "game:stop": () => void;
+  "game:submit-word": (word: string) => void;
+
+  "user:joined": (user: User) => void;
+  "user:left": (userId: string) => void;
+  "users:list": (users: User[]) => void;
+  "message:received": (message: Message) => void;
+  "score:updated": (score: GameScore) => void;
+  "admin:notification": (message: string) => void;
+  "game:state-changed": (gameState: GameState) => void;
+  "game:updated": (game: BoomPartyGame) => void;
+  "game:bomb-tick": (timeRemaining: number) => void;
+  "game:explosion": (playerId: string) => void;
+  "game:word-accepted": (word: string, nextPlayerId: string) => void;
+  "game:word-rejected": (reason: string) => void;
+  error: (message: string) => void;
 }
 
 export const AVATARS = [
-  'avatar-1', 'avatar-2', 'avatar-3', 'avatar-4', 
-  'avatar-5', 'avatar-6', 'avatar-7', 'avatar-8'
+  "avatar-1",
+  "avatar-2",
+  "avatar-3",
+  "avatar-4",
+  "avatar-5",
+  "avatar-6",
+  "avatar-7",
+  "avatar-8",
 ] as const;
 
-export type Avatar = typeof AVATARS[number];
-
-export const ADMIN_TOKEN = 'boom-admin-2024';
+export type Avatar = (typeof AVATARS)[number];

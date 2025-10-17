@@ -51,73 +51,66 @@ export default function ChatArea({ messages, currentUser, onSendMessage }: ChatA
 
       <div className="flex-1 overflow-y-auto p-4 space-y-3">
         {messages.length === 0 ? (
-          <div className="text-center py-8">
-            <div className="text-white/40 text-6xl mb-4">💬</div>
-            <p className="text-white/60">Aucun message pour le moment</p>
-            <p className="text-white/40 text-sm mt-2">
-              Commencez la conversation !
+          <div className="text-center py-12">
+            <div className="text-white/40 text-6xl mb-3">💬</div>
+            <p className="text-white/60 text-sm">
+              Aucun message pour le moment
+            </p>
+            <p className="text-white/40 text-xs mt-2">
+              Soyez le premier à envoyer un message !
             </p>
           </div>
         ) : (
           messages.map((message) => {
             const isCurrentUser = message.sender.id === currentUser.id;
-            const isSystem = message.type === 'system';
+            const isSystem = message.type === "system";
 
             return (
               <div
                 key={message.id}
-                className={`p-3 rounded-lg border ${getMessageTypeStyle(message.type)} ${
-                  isCurrentUser && !isSystem ? 'ml-4' : 'mr-4'
-                }`}
+                className={`p-3 rounded-lg border ${getMessageTypeStyle(
+                  message.type
+                )} ${isCurrentUser && !isSystem ? "ml-8" : "mr-8"}`}
               >
                 {!isSystem && (
                   <div className="flex items-center space-x-2 mb-2">
                     <img
                       src={getAvatarUrl(message.sender.avatar)}
                       alt={`Avatar de ${message.sender.name}`}
-                      className="w-6 h-6 rounded-lg"
+                      className="w-8 h-8 rounded"
                       onError={(e) => {
                         const target = e.target as HTMLImageElement;
-                        target.style.display = 'none';
+                        target.style.display = "none";
                         const parent = target.parentElement;
                         if (parent) {
-                          parent.innerHTML += `<div class="w-6 h-6 rounded-lg bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center text-white font-bold text-xs">${message.sender.avatar.split('-')[1]}</div>`;
+                          parent.innerHTML += `<div class="w-8 h-8 rounded bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center text-white font-bold text-sm">${
+                            message.sender.avatar.split("-")[1]
+                          }</div>`;
                         }
                       }}
                     />
-                    <span className="font-medium text-sm">
-                      {isCurrentUser ? 'Vous' : message.sender.name}
+                    <span className="font-medium">
+                      {isCurrentUser ? "Vous" : message.sender.name}
                     </span>
                     {message.sender.isAdmin && (
-                      <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full font-bold">
+                      <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full font-bold">
                         ADMIN
                       </span>
                     )}
-                    <span className="text-xs opacity-70">
-                      {formatTime(message.timestamp)}
-                    </span>
                   </div>
                 )}
 
-                <div className={`${isSystem ? 'text-center font-medium' : ''}`}>
+                <div className={`${isSystem ? "text-center font-medium" : ""}`}>
                   {isSystem && <span className="mr-2">🔔</span>}
-                  {message.type === 'private' && <span className="mr-2">🔒</span>}
+                  {message.type === "private" && (
+                    <span className="mr-2">🔒</span>
+                  )}
                   {message.content}
                 </div>
 
-                {message.type === 'private' && (
-                  <div className="mt-2 text-xs opacity-70 flex items-center space-x-1">
-                    <span>Message privé</span>
-                    {message.recipient && (
-                      <span>
-                        {message.sender.id === currentUser.id 
-                          ? `→ ${message.recipient.name}`
-                          : `← ${message.sender.name}`
-                        }
-                      </span>
-                    )}
-                  </div>
-                )}
+                <div className="text-xs opacity-60 mt-2">
+                  {formatTime(message.timestamp)}
+                </div>
               </div>
             );
           })
@@ -131,22 +124,18 @@ export default function ChatArea({ messages, currentUser, onSendMessage }: ChatA
             type="text"
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
-            placeholder="Tapez votre message..."
-            className="flex-1 px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-transparent"
+            placeholder="Écrivez votre message..."
+            className="flex-1 px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-transparent"
             maxLength={500}
           />
           <button
             type="submit"
             disabled={!newMessage.trim()}
-            className="bg-cyan-500 hover:bg-cyan-600 disabled:bg-gray-500 disabled:cursor-not-allowed text-white p-2 rounded-lg transition-colors flex items-center justify-center"
+            className="bg-cyan-500 hover:bg-cyan-600 disabled:bg-gray-500 disabled:cursor-not-allowed text-white px-6 py-3 rounded-lg transition-colors flex items-center justify-center"
           >
-            <Send size={18} />
+            <Send size={20} />
           </button>
         </form>
-        
-        <div className="mt-2 text-right text-white/40 text-xs">
-          {newMessage.length}/500
-        </div>
       </div>
     </div>
   );

@@ -1,9 +1,10 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { User, Message } from "@/lib/types";
+import { User, Message, BoomPartyGame } from "@/lib/types";
 import { socketManager } from "@/lib/socket";
 import UsersList from "@/components/UsersList";
 import ChatArea from "@/components/ChatArea";
+import GameArea from "@/components/GameArea";
 import GameHeader from "@/components/GameHeader";
 
 interface GameRoomProps {
@@ -15,6 +16,25 @@ export default function GameRoom({ user, onLogout }: GameRoomProps) {
   const [connectedUsers, setConnectedUsers] = useState<User[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
   const [isConnected, setIsConnected] = useState(true);
+  const [game, setGame] = useState<BoomPartyGame>({
+    isActive: false,
+    status: "waiting",
+    players: [],
+    bombState: {
+      currentLetter: "",
+      timeRemaining: 0,
+      maxTime: 0,
+      activePlayerId: null,
+      usedWords: [],
+      roundNumber: 0,
+    },
+    winner: null,
+    settings: {
+      minTime: 10,
+      maxTime: 30,
+      startingLives: 3,
+    },
+  });
 
   useEffect(() => {
     console.log("GameRoom mounted, setting up listeners for user:", user.name);
@@ -39,15 +59,28 @@ export default function GameRoom({ user, onLogout }: GameRoomProps) {
       setMessages((prev) => [...prev, message]);
     });
 
+    socketManager.onGameUpdated((updatedGame: BoomPartyGame) => {
+      console.log("Game updated:", updatedGame);
+      setGame(updatedGame);
+    });
+
+    socketManager.onBombTick((timeRemaining: number) => {
+      setGame((prev) => ({
+        ...prev,
+        bombState: {
+          ...prev.bombState,
+          timeRemaining,
+        },
+      }));
+    });
+
+    socketManager.onWordRejected((reason: string) => {
+      alert(`❌ ${reason}`);
+    });
+
     socketManager.onError((error: string) => {
       console.error("Socket error:", error);
-      
-      if (error.includes("expulsé")) {
-        alert(error);
-        handleLogout();
-      } else {
-        setIsConnected(false);
-      }
+      setIsConnected(false);
     });
 
     return () => {
@@ -71,6 +104,22 @@ export default function GameRoom({ user, onLogout }: GameRoomProps) {
     if (user.isAdmin) {
       socketManager.kickUser(userId);
     }
+  };
+
+  const handleStartGame = () => {
+    if (user.isAdmin) {
+      socketManager.startGame();
+    }
+  };
+
+  const handleStopGame = () => {
+    if (user.isAdmin) {
+      socketManager.stopGame();
+    }
+  };
+
+  const handleSubmitWord = (word: string) => {
+    socketManager.submitWord(word);
   };
 
   const handleLogout = () => {
@@ -108,7 +157,7 @@ export default function GameRoom({ user, onLogout }: GameRoomProps) {
       />
 
       <div className="container mx-auto px-4 py-6">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-140px)]">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 h-[calc(100vh-140px)]">
           <div className="lg:col-span-1">
             <UsersList
               users={connectedUsers}
@@ -119,6 +168,16 @@ export default function GameRoom({ user, onLogout }: GameRoomProps) {
           </div>
 
           <div className="lg:col-span-2">
+            <GameArea
+              game={game}
+              currentUser={user}
+              onSubmitWord={handleSubmitWord}
+              onStartGame={handleStartGame}
+              onStopGame={handleStopGame}
+            />
+          </div>
+
+          <div className="lg:col-span-1">
             <ChatArea
               messages={messages}
               currentUser={user}

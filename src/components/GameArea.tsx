@@ -1,222 +1,313 @@
 'use client';
-import { useState } from 'react';
-import { User, GameScore } from '@/lib/types';
-import { Zap, Target, Bomb, Star, Trophy, Plus, Shield, RotateCcw } from 'lucide-react';
+import { useState, useEffect } from "react";
+import { User, BoomPartyGame } from "@/lib/types";
+import { Bomb, Zap, Trophy, Heart, Send } from "lucide-react";
 
 interface GameAreaProps {
-  user: User;
-  onGameAction: (actionType: string, data: unknown) => void;
-  score: GameScore;
-  onResetScore?: () => void;
+  game: BoomPartyGame;
+  currentUser: User;
+  onSubmitWord: (word: string) => void;
+  onStartGame: () => void;
+  onStopGame: () => void;
 }
 
-export default function GameArea({ user, onGameAction, score, onResetScore }: GameAreaProps) {
-  const [lastAction, setLastAction] = useState<string>('');
-  const [actionCount, setActionCount] = useState(0);
-  const [isAnimating, setIsAnimating] = useState(false);
-  const [showResetConfirm, setShowResetConfirm] = useState(false);
+export default function GameArea({
+  game,
+  currentUser,
+  onSubmitWord,
+  onStartGame,
+  onStopGame,
+}: GameAreaProps) {
+  const [wordInput, setWordInput] = useState("");
+  const [shakeAnimation, setShakeAnimation] = useState(false);
 
-  const performAction = (actionType: string, points: number, emoji: string) => {
-    if (isAnimating) return;
+  const isActivePlayer = game.bombState.activePlayerId === currentUser.id;
+  const activePlayer = game.players.find(
+    (p) => p.id === game.bombState.activePlayerId
+  );
+  const alivePlayers = game.players.filter((p) => p.isAlive);
 
-    setIsAnimating(true);
-    setLastAction(`${emoji} ${actionType} (+${points} pts)`);
-    setActionCount(prev => prev + 1);
+  useEffect(() => {
+    if (game.bombState.timeRemaining <= 5 && game.bombState.timeRemaining > 0) {
+      setShakeAnimation(true);
+      const timer = setTimeout(() => setShakeAnimation(false), 500);
+      return () => clearTimeout(timer);
+    }
+  }, [game.bombState.timeRemaining]);
 
-    onGameAction(actionType, { 
-      points, 
-      userId: user.id,
-      userName: user.name,
-      timestamp: new Date()
-    });
-
-    setTimeout(() => setIsAnimating(false), 1000);
-  };
-
-  const handleResetScore = () => {
-    if (onResetScore) {
-      onResetScore();
-      setShowResetConfirm(false);
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (wordInput.trim() && isActivePlayer) {
+      onSubmitWord(wordInput.trim().toUpperCase());
+      setWordInput("");
     }
   };
 
-  const gameActions = [
-    {
-      id: 'boom-click',
-      name: 'Boom Click',
-      emoji: '💥',
-      points: 5,
-      color: 'from-red-500 to-red-600',
-      description: 'Cliquez pour faire exploser !'
-    },
-    {
-      id: 'super-boom',
-      name: 'Super Boom',
-      emoji: '🎆',
-      points: 15,
-      color: 'from-purple-500 to-purple-600',
-      description: 'Une explosion spectaculaire !'
-    },
-    {
-      id: 'mega-blast',
-      name: 'Mega Blast',
-      emoji: '🚀',
-      points: 25,
-      color: 'from-blue-500 to-blue-600',
-      description: 'L\'explosion ultime !'
-    },
-    {
-      id: 'bonus-star',
-      name: 'Bonus Star',
-      emoji: '⭐',
-      points: 10,
-      color: 'from-yellow-500 to-yellow-600',
-      description: 'Une étoile bonus !'
-    }
-  ];
+  const getTimerColor = () => {
+    const percentage =
+      (game.bombState.timeRemaining / game.bombState.maxTime) * 100;
+    if (percentage > 50) return "text-green-400";
+    if (percentage > 25) return "text-yellow-400";
+    return "text-red-400";
+  };
 
-  return (
-    <div className="bg-white/10 backdrop-blur-lg rounded-2xl border border-white/20 h-full flex flex-col">
-      <div className="p-4 border-b border-white/20">
-        <div className="flex items-center justify-between">
-          <h3 className="text-white font-bold text-lg flex items-center space-x-2">
-            <Bomb size={20} />
-            <span>Zone de Jeu</span>
-          </h3>
-          <div className="text-white/80 text-sm">
-            Actions: {actionCount}
+  const getBombSize = () => {
+    const percentage =
+      (game.bombState.timeRemaining / game.bombState.maxTime) * 100;
+    if (percentage > 50) return 80;
+    if (percentage > 25) return 100;
+    return 120;
+  };
+
+  if (game.status === "waiting") {
+    return (
+      <div className="bg-white/10 backdrop-blur-lg rounded-2xl border border-white/20 p-8 h-full flex flex-col items-center justify-center">
+        <Bomb size={120} className="text-yellow-400 mb-6 animate-bounce" />
+        <h2 className="text-3xl font-bold text-white mb-4">Tic Tac Boom!</h2>
+        <p className="text-white/80 mb-2 text-center max-w-md">
+          Trouvez un mot contenant la syllabe affichée avant que la bombe
+          n&apos;explose ! 💣
+        </p>
+        <p className="text-white/60 mb-8 text-sm text-center">
+          Minimum {game.settings.minTime}s - Maximum {game.settings.maxTime}s
+          par tour
+        </p>
+
+        {currentUser.isAdmin ? (
+          <button
+            onClick={onStartGame}
+            disabled={alivePlayers.length < 2}
+            className="bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 disabled:from-gray-500 disabled:to-gray-600 text-white font-bold py-4 px-8 rounded-xl transition-all transform hover:scale-105 disabled:scale-100 shadow-lg"
+          >
+            {alivePlayers.length < 2
+              ? "Attendez au moins 2 joueurs"
+              : "🚀 Démarrer la partie"}
+          </button>
+        ) : (
+          <div className="text-white/60 text-center">
+            <p className="mb-2">En attente du démarrage...</p>
+            <p className="text-sm">
+              L&apos;admin peut lancer la partie dès que 2 joueurs sont présents
+            </p>
           </div>
-        </div>
-      </div>
+        )}
 
-      <div className="flex-1 p-6 flex flex-col">
-        <div className="text-center mb-8">
-          <div className="bg-gradient-to-r from-yellow-500 to-yellow-600 rounded-2xl p-6 text-white">
-            <Trophy size={32} className="mx-auto mb-2" />
-            <h2 className="text-3xl font-bold mb-2">
-              {score.global.toLocaleString()}
-            </h2>
-            <p className="text-yellow-100">Points Globaux</p>
-            {lastAction && (
-              <div className={`mt-4 text-sm font-medium transition-all duration-1000 ${
-                isAnimating ? 'opacity-100 scale-110' : 'opacity-70 scale-100'
-              }`}>
-                Dernière action: {lastAction}
-              </div>
-            )}
-          </div>
-        </div>
-
-        <div className="flex-1">
-          <h4 className="text-white font-semibold mb-4 flex items-center space-x-2">
-            <Target size={18} />
-            <span>Actions disponibles</span>
-          </h4>
-          
-          <div className="grid grid-cols-2 gap-4">
-            {gameActions.map((action) => (
-              <button
-                key={action.id}
-                onClick={() => performAction(action.name, action.points, action.emoji)}
-                disabled={isAnimating}
-                className={`
-                  bg-gradient-to-br ${action.color} hover:scale-105 active:scale-95
-                  disabled:scale-100 disabled:opacity-50 disabled:cursor-not-allowed
-                  text-white font-bold p-6 rounded-xl shadow-lg
-                  transition-all duration-200 hover:shadow-xl
-                  flex flex-col items-center space-y-2
-                `}
+        <div className="mt-8 text-white/60 text-sm">
+          <p className="font-semibold mb-2">
+            Joueurs prêts: {alivePlayers.length}
+          </p>
+          <div className="flex flex-wrap gap-2 justify-center">
+            {game.players.map((player) => (
+              <div
+                key={player.id}
+                className="flex items-center space-x-1 bg-white/10 px-3 py-1 rounded-full"
               >
-                <span className="text-3xl">{action.emoji}</span>
-                <span className="text-sm font-medium">{action.name}</span>
-                <div className="flex items-center space-x-1 text-xs opacity-90">
-                  <Plus size={12} />
-                  <span>{action.points} pts</span>
-                </div>
-                <p className="text-xs text-center opacity-75 leading-tight">
-                  {action.description}
-                </p>
-              </button>
+                <span>{player.avatar}</span>
+                <span className="text-xs">{player.name}</span>
+                {player.isAdmin && (
+                  <span className="text-yellow-400 text-xs">👑</span>
+                )}
+              </div>
             ))}
           </div>
         </div>
+      </div>
+    );
+  }
 
-        <div className="mt-6 grid grid-cols-3 gap-4 text-center">
-          <div className="bg-white/5 rounded-lg p-3">
-            <Zap size={20} className="mx-auto text-yellow-400 mb-1" />
-            <p className="text-white font-bold">{actionCount}</p>
-            <p className="text-white/60 text-xs">Vos actions</p>
-          </div>
-          <div className="bg-white/5 rounded-lg p-3">
-            <Star size={20} className="mx-auto text-cyan-400 mb-1" />
-            <p className="text-white font-bold">
-              {score.contributors.find(c => c.userId === user.id)?.points || 0}
-            </p>
-            <p className="text-white/60 text-xs">Vos points</p>
-          </div>
-          <div className="bg-white/5 rounded-lg p-3">
-            <Trophy size={20} className="mx-auto text-purple-400 mb-1" />
-            <p className="text-white font-bold">
-              {score.contributors.length > 0 
-                ? Math.round(score.global / score.contributors.length) 
-                : 0}
-            </p>
-            <p className="text-white/60 text-xs">Moyenne</p>
-          </div>
-        </div>
-
-        {isAnimating && (
-          <div className="fixed inset-0 pointer-events-none z-50 flex items-center justify-center">
-            <div className="text-6xl animate-bounce">
-              {lastAction.split(' ')[0]}
+  if (game.status === "finished") {
+    return (
+      <div className="bg-white/10 backdrop-blur-lg rounded-2xl border border-white/20 p-8 h-full flex flex-col items-center justify-center">
+        <Trophy size={120} className="text-yellow-400 mb-6 animate-pulse" />
+        <h2 className="text-4xl font-bold text-white mb-4">
+          🎉 Partie terminée!
+        </h2>
+        {game.winner && (
+          <div className="text-center mb-8">
+            <p className="text-white/80 mb-2">Le gagnant est:</p>
+            <div className="bg-gradient-to-r from-yellow-500/20 to-orange-500/20 border border-yellow-400/50 rounded-xl p-6">
+              <div className="text-6xl mb-2">{game.winner.avatar}</div>
+              <div className="text-3xl font-bold text-yellow-400">
+                {game.winner.name}
+              </div>
             </div>
           </div>
         )}
 
-        {user.isAdmin && (
-          <div className="mt-6 bg-red-500/10 border border-red-500/30 rounded-xl p-4">
-            <div className="flex items-center space-x-2 mb-3">
-              <Shield size={18} className="text-red-400" />
-              <h5 className="text-white font-semibold">Contrôles Admin</h5>
-            </div>
-            <button
-              onClick={() => setShowResetConfirm(true)}
-              className="w-full bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-4 rounded-lg transition-colors flex items-center justify-center space-x-2"
-            >
-              <RotateCcw size={18} />
-              <span>Réinitialiser le score global</span>
-            </button>
+        <div className="mb-8">
+          <h3 className="text-white font-semibold mb-4">Classement final:</h3>
+          <div className="space-y-2">
+            {game.players
+              .sort((a, b) => (b.lives || 0) - (a.lives || 0))
+              .map((player, index) => (
+                <div
+                  key={player.id}
+                  className={`flex items-center justify-between space-x-4 px-4 py-2 rounded-lg ${
+                    index === 0
+                      ? "bg-yellow-500/20 border border-yellow-400/50"
+                      : "bg-white/5"
+                  }`}
+                >
+                  <div className="flex items-center space-x-3">
+                    <span className="text-2xl font-bold text-white/60 w-6">
+                      #{index + 1}
+                    </span>
+                    <span className="text-2xl">{player.avatar}</span>
+                    <span className="text-white font-medium">
+                      {player.name}
+                    </span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Heart size={16} className="text-red-400" />
+                    <span className="text-white font-bold">
+                      {player.lives || 0}
+                    </span>
+                  </div>
+                </div>
+              ))}
           </div>
+        </div>
+
+        {currentUser.isAdmin && (
+          <button
+            onClick={onStartGame}
+            className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white font-bold py-3 px-8 rounded-xl transition-all transform hover:scale-105 shadow-lg"
+          >
+            🔄 Nouvelle partie
+          </button>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-white/10 backdrop-blur-lg rounded-2xl border border-white/20 p-6 h-full flex flex-col">
+      {/* Header avec scores */}
+      <div className="flex justify-between items-center mb-6">
+        <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-2 bg-white/10 px-4 py-2 rounded-lg">
+            <Zap size={20} className="text-yellow-400" />
+            <span className="text-white font-bold">
+              Tour {game.bombState.roundNumber}
+            </span>
+          </div>
+          <div className="flex items-center space-x-2 text-white/80 text-sm">
+            <span>Joueurs en vie: {alivePlayers.length}</span>
+          </div>
+        </div>
+        {currentUser.isAdmin && (
+          <button
+            onClick={onStopGame}
+            className="bg-red-500/80 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+          >
+            Arrêter la partie
+          </button>
         )}
       </div>
 
-      {showResetConfirm && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-white/10 backdrop-blur-lg rounded-2xl border border-white/20 p-6 w-full max-w-md mx-4">
-            <h3 className="text-white font-bold text-lg mb-4 flex items-center space-x-2">
-              <Shield size={20} className="text-red-400" />
-              <span>Confirmer la réinitialisation</span>
-            </h3>
-            <p className="text-white/80 mb-6">
-              Êtes-vous sûr de vouloir remettre le score global à zéro ? Cette action est irréversible.
-            </p>
-            <div className="flex space-x-3">
-              <button
-                onClick={() => setShowResetConfirm(false)}
-                className="flex-1 bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg transition-colors"
-              >
-                Annuler
-              </button>
-              <button
-                onClick={handleResetScore}
-                className="flex-1 bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg transition-colors"
-              >
-                Réinitialiser
-              </button>
+      {/* Zone centrale de jeu */}
+      <div className="flex-1 flex flex-col items-center justify-center space-y-8">
+        {/* Bombe et Timer */}
+        <div className={`relative ${shakeAnimation ? "animate-shake" : ""}`}>
+          <Bomb
+            size={getBombSize()}
+            className={`${getTimerColor()} transition-all duration-300`}
+          />
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className={`text-4xl font-bold ${getTimerColor()}`}>
+              {game.bombState.timeRemaining}
             </div>
           </div>
         </div>
-      )}
+
+        {/* Syllabe courante */}
+        <div className="bg-gradient-to-br from-purple-500/30 to-pink-500/30 border-2 border-white/40 rounded-3xl p-8 shadow-2xl">
+          <div className="text-center">
+            <p className="text-white/80 text-lg mb-2">
+              Trouvez un mot avec la syllabe:
+            </p>
+            <div className="text-8xl font-bold text-white tracking-wider">
+              {game.bombState.currentLetter}
+            </div>
+          </div>
+        </div>
+
+        {/* Joueur actif */}
+        {activePlayer && (
+          <div
+            className={`text-center ${isActivePlayer ? "animate-pulse" : ""}`}
+          >
+            <p className="text-white/60 mb-2">
+              {isActivePlayer ? "C'est votre tour!" : "C'est le tour de:"}
+            </p>
+            <div
+              className={`flex items-center space-x-3 px-6 py-3 rounded-xl ${
+                isActivePlayer
+                  ? "bg-gradient-to-r from-yellow-500/30 to-orange-500/30 border-2 border-yellow-400"
+                  : "bg-white/10"
+              }`}
+            >
+              <span className="text-4xl">{activePlayer.avatar}</span>
+              <div className="text-left">
+                <div className="text-white font-bold text-xl">
+                  {activePlayer.name}
+                </div>
+                <div className="flex items-center space-x-1">
+                  {Array.from({ length: activePlayer.lives || 0 }).map(
+                    (_, i) => (
+                      <Heart
+                        key={i}
+                        size={16}
+                        className="text-red-400 fill-red-400"
+                      />
+                    )
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Input pour soumettre un mot */}
+        {isActivePlayer && (
+          <form onSubmit={handleSubmit} className="w-full max-w-md">
+            <div className="flex space-x-2">
+              <input
+                type="text"
+                value={wordInput}
+                onChange={(e) => setWordInput(e.target.value.toUpperCase())}
+                placeholder="Entrez un mot..."
+                className="flex-1 bg-white/20 border-2 border-white/40 rounded-xl px-6 py-4 text-white placeholder-white/50 text-lg font-medium focus:outline-none focus:border-yellow-400 uppercase"
+                autoFocus
+              />
+              <button
+                type="submit"
+                disabled={!wordInput.trim()}
+                className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 disabled:from-gray-500 disabled:to-gray-600 text-white font-bold px-6 py-4 rounded-xl transition-all transform hover:scale-105 disabled:scale-100 shadow-lg"
+              >
+                <Send size={24} />
+              </button>
+            </div>
+          </form>
+        )}
+
+        {/* Mots déjà utilisés */}
+        {game.bombState.usedWords.length > 0 && (
+          <div className="w-full max-w-2xl">
+            <p className="text-white/60 text-sm mb-2">Mots déjà utilisés:</p>
+            <div className="flex flex-wrap gap-2 max-h-20 overflow-y-auto">
+              {game.bombState.usedWords.slice(-10).map((word, index) => (
+                <span
+                  key={index}
+                  className="bg-white/10 text-white/80 px-3 py-1 rounded-full text-sm"
+                >
+                  {word}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
