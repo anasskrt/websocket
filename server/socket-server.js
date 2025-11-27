@@ -425,11 +425,11 @@ function calculateBombTime(
 
   if (lastWordLength > 0) {
     if (lastWordLength >= 8) {
-      calculatedTime += 3;
+      calculatedTime -= 3;
     } else if (lastWordLength >= 6) {
-      calculatedTime += 2;
-    } else if (lastWordLength <= 4) {
       calculatedTime -= 2;
+    } else if (lastWordLength <= 4) {
+      calculatedTime += 2;
     }
   }
 
@@ -1051,14 +1051,14 @@ io.on("connection", (socket) => {
       ).toFixed(0);
       const bonusInfo =
         word.length >= 8
-          ? " 🎯 +3s pour le suivant!"
+          ? " 🎯 -3s pour l'adversaire!"
           : word.length >= 6
-          ? " ⭐ +2s pour le suivant!"
+          ? " ⭐ -2s pour l'adversaire!"
           : word.length <= 4
-          ? " ⚡ -2s pour le suivant!"
+          ? " ⚡ +2s pour l'adversaire!"
           : "";
       const speedInfo =
-        timeUsedPercent < 30 ? " 🔥 Trop rapide! -3s pour le suivant!" : "";
+        timeUsedPercent < 30 ? " 🔥 Trop rapide! -3s pour l'adversaire!" : "";
 
       const successMessage = createMessage(
         `${
