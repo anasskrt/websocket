@@ -8,7 +8,7 @@ const frenchWordsSet = new Set(frenchWords.map((word) => word.toUpperCase()));
 const httpServer = createServer();
 const io = new Server(httpServer, {
   cors: {
-    origin: "http://localhost:3000",
+    origin: ["http://localhost:3000", "http://localhost:3002"],
     methods: ["GET", "POST"],
     credentials: true,
   },
@@ -28,6 +28,8 @@ const gameState = {
       activePlayerId: null,
       usedWords: [],
       roundNumber: 0,
+      lastWordLength: 0,
+      timeWhenWordSubmitted: 0,
     },
     winner: null,
     settings: {
@@ -228,8 +230,6 @@ const COMBINAISONS = [
   "VU",
   "ZE",
   "ZO",
-
-  // Combinaisons de 3 lettres très fréquentes
   "AIR",
   "ANC",
   "ANT",
@@ -384,7 +384,6 @@ const COMBINAISONS = [
   "ZON",
 ];
 
-// Créer un cache de syllabes validées (qui ont au moins 10 mots possibles)
 let validatedCombinations = null;
 
 function getValidatedCombinations() {
@@ -397,7 +396,7 @@ function getValidatedCombinations() {
     );
     const isValid = wordsWithCombo.length >= 10;
     if (isValid) {
-      console.log(`✓ ${combo}: ${wordsWithCombo.length} mots`);
+      console.log(`${combo}: ${wordsWithCombo.length} mots`);
     }
     return isValid;
   });
@@ -413,28 +412,50 @@ function getRandomSyllabe() {
   return validated[Math.floor(Math.random() * validated.length)];
 }
 
-function getRandomTime(min, max) {
-  return Math.floor(Math.random() * (max - min + 1)) + min;
+function calculateBombTime(
+  roundNumber,
+  settings,
+  lastWordLength = 0,
+  lastTimeUsed = 0
+) {
+  const baseTime = settings.maxTime;
+  const minTime = settings.minTime;
+
+  let calculatedTime = baseTime - Math.floor((roundNumber - 1) * 1.5);
+
+  if (lastWordLength > 0) {
+    if (lastWordLength >= 8) {
+      calculatedTime += 3;
+    } else if (lastWordLength >= 6) {
+      calculatedTime += 2;
+    } else if (lastWordLength <= 4) {
+      calculatedTime -= 2;
+    }
+  }
+
+  if (lastTimeUsed > 0) {
+    const percentageUsed = (lastTimeUsed / baseTime) * 100;
+    if (percentageUsed < 30) {
+      calculatedTime -= 3;
+    }
+  }
+
+  return Math.max(minTime, Math.min(settings.maxTime, calculatedTime));
 }
 
-// Fonction pour vérifier si un mot existe dans le dictionnaire français (synchrone)
 function checkWordExists(word) {
   const normalizedWord = word.toUpperCase().trim();
-  // Vérifier dans notre dictionnaire local
   return frenchWordsSet.has(normalizedWord);
 }
 
-// Valider un mot pour le jeu
 function validateWord(word, syllabe, usedWords) {
   const normalizedWord = word.toUpperCase().trim();
   const normalizedSyllabe = syllabe.toUpperCase();
 
-  // 1. Vérifier longueur minimale
   if (normalizedWord.length < 4) {
     return { valid: false, reason: "Le mot doit contenir au moins 4 lettres" };
   }
 
-  // 2. Vérifier que le mot contient la combinaison
   if (!normalizedWord.includes(normalizedSyllabe)) {
     return {
       valid: false,
@@ -442,12 +463,10 @@ function validateWord(word, syllabe, usedWords) {
     };
   }
 
-  // 3. Vérifier que le mot n'a pas déjà été utilisé
   if (usedWords && usedWords.includes(normalizedWord)) {
     return { valid: false, reason: "Ce mot a déjà été utilisé" };
   }
 
-  // 4. Vérifier que le mot existe dans le dictionnaire
   if (!checkWordExists(normalizedWord)) {
     return { valid: false, reason: "Ce mot n'existe pas dans le dictionnaire" };
   }
@@ -469,23 +488,18 @@ function initializeGame() {
     })),
     bombState: {
       currentLetter: getRandomSyllabe(),
-      timeRemaining: getRandomTime(
-        gameState.game.settings.minTime,
-        gameState.game.settings.maxTime
-      ),
-      maxTime: getRandomTime(
-        gameState.game.settings.minTime,
-        gameState.game.settings.maxTime
-      ),
+      timeRemaining: gameState.game.settings.maxTime,
+      maxTime: gameState.game.settings.maxTime,
       activePlayerId: alivePlayers[0]?.id || users[0]?.id,
       usedWords: [],
       roundNumber: 1,
+      lastWordLength: 0,
+      timeWhenWordSubmitted: 0,
     },
     winner: null,
     settings: gameState.game.settings,
   };
 
-  // Update users lives
   users.forEach((user) => {
     user.lives = gameState.game.settings.startingLives;
     user.isAlive = true;
@@ -529,7 +543,6 @@ function handleExplosion() {
     const player = gameState.game.players[playerIndex];
     player.lives = (player.lives || 0) - 1;
 
-    // Update user in gameState.users
     const userEntry = Array.from(gameState.users.entries()).find(
       ([, u]) => u.id === player.id
     );
@@ -545,7 +558,7 @@ function handleExplosion() {
     io.emit("game:explosion", activePlayerId);
 
     const systemMessage = createMessage(
-      `💥 ${player.name} n'a pas trouvé de mot à temps ! ${
+      `${player.name} n'a pas trouvé de mot à temps ! ${
         player.lives > 0 ? `Il reste ${player.lives} vie(s)` : "Éliminé!"
       }`,
       player,
@@ -556,7 +569,6 @@ function handleExplosion() {
 
     gameState.game.players[playerIndex] = player;
 
-    // Check if game is over
     const alivePlayers = gameState.game.players.filter((p) => p.isAlive);
 
     if (alivePlayers.length <= 1) {
@@ -564,7 +576,6 @@ function handleExplosion() {
       return;
     }
 
-    // Next player
     nextPlayer();
   }
 }
@@ -584,11 +595,16 @@ function nextPlayer() {
 
   gameState.game.bombState.activePlayerId = alivePlayers[nextIndex].id;
   gameState.game.bombState.currentLetter = getRandomSyllabe();
-  gameState.game.bombState.timeRemaining = getRandomTime(
-    gameState.game.settings.minTime,
-    gameState.game.settings.maxTime
+
+  const newTime = calculateBombTime(
+    gameState.game.bombState.roundNumber + 1,
+    gameState.game.settings,
+    gameState.game.bombState.lastWordLength,
+    gameState.game.bombState.timeWhenWordSubmitted
   );
-  gameState.game.bombState.maxTime = gameState.game.bombState.timeRemaining;
+
+  gameState.game.bombState.timeRemaining = newTime;
+  gameState.game.bombState.maxTime = newTime;
   gameState.game.bombState.roundNumber++;
 
   broadcastGameState();
@@ -603,7 +619,7 @@ function endGame(winner) {
   gameState.game.isActive = false;
 
   const systemMessage = createMessage(
-    winner ? `🎉 ${winner.name} remporte la partie !` : "🎮 Partie terminée",
+    winner ? `${winner.name} remporte la partie !` : "Partie terminée",
     winner || gameState.game.players[0],
     "system"
   );
@@ -626,9 +642,10 @@ function stopGame() {
     activePlayerId: null,
     usedWords: [],
     roundNumber: 0,
+    lastWordLength: 0,
+    timeWhenWordSubmitted: 0,
   };
 
-  // Reset users lives
   Array.from(gameState.users.values()).forEach((user) => {
     user.lives = gameState.game.settings.startingLives;
     user.isAlive = true;
@@ -653,8 +670,6 @@ function broadcastGameState() {
 
   io.emit("game:updated", gameState.game);
 }
-
-// ========== END TIC TAC BOOM GAME FUNCTIONS ==========
 
 io.on("connection", (socket) => {
   console.log(`New connection: ${socket.id}`);
@@ -707,7 +722,6 @@ io.on("connection", (socket) => {
         socket.emit("users:list", allUsers);
         socket.broadcast.emit("users:list", allUsers);
 
-        // Send current game state
         broadcastGameState();
       }, 100);
 
@@ -838,6 +852,27 @@ io.on("connection", (socket) => {
 
           broadcastUsersList();
 
+          if (gameState.game.status === "playing") {
+            const remainingUsers = Array.from(gameState.users.values());
+            if (remainingUsers.length < 2) {
+              stopGame();
+              const gameStopMessage = createMessage(
+                "⏹️ Partie arrêtée : pas assez de joueurs",
+                admin,
+                "system"
+              );
+              gameState.messages.push(gameStopMessage);
+              io.emit("message:received", gameStopMessage);
+            } else {
+              const alivePlayers = gameState.game.players.filter(
+                (p) => p.isAlive && gameState.users.has(p.socketId)
+              );
+              if (alivePlayers.length <= 1) {
+                endGame(alivePlayers[0] || null);
+              }
+            }
+          }
+
           socketToKick.emit(
             "error",
             "Vous avez été expulsé par un administrateur"
@@ -854,8 +889,6 @@ io.on("connection", (socket) => {
       console.error("Error in admin:kick:", error);
     }
   });
-
-  // ========== GAME EVENTS ==========
 
   socket.on("game:start", () => {
     try {
@@ -874,7 +907,7 @@ io.on("connection", (socket) => {
       initializeGame();
 
       const systemMessage = createMessage(
-        `🎮 ${admin.name} a démarré une partie de Tic Tac Boom !`,
+        `${admin.name} a démarré une partie de Tic Tac Boom !`,
         admin,
         "system"
       );
@@ -899,7 +932,7 @@ io.on("connection", (socket) => {
       stopGame();
 
       const systemMessage = createMessage(
-        `⏹️ ${admin.name} a arrêté la partie`,
+        `${admin.name} a arrêté la partie`,
         admin,
         "system"
       );
@@ -929,7 +962,6 @@ io.on("connection", (socket) => {
         return;
       }
 
-      // Valider les paramètres
       if (
         settings.minTime < 5 ||
         settings.maxTime > 60 ||
@@ -944,18 +976,16 @@ io.on("connection", (socket) => {
         return;
       }
 
-      // Mettre à jour les paramètres
       gameState.game.settings = {
         minTime: settings.minTime,
         maxTime: settings.maxTime,
         startingLives: settings.startingLives,
       };
 
-      // Diffuser la mise à jour
       broadcastGameState();
 
       const systemMessage = createMessage(
-        `⚙️ ${admin.name} a modifié les paramètres: ${settings.minTime}-${settings.maxTime}s, ${settings.startingLives} vies`,
+        `${admin.name} a modifié les paramètres: ${settings.minTime}-${settings.maxTime}s, ${settings.startingLives} vies`,
         admin,
         "system"
       );
@@ -987,7 +1017,6 @@ io.on("connection", (socket) => {
         return;
       }
 
-      // Validation synchrone avec le dictionnaire local
       const validation = validateWord(
         word,
         gameState.game.bombState.currentLetter,
@@ -998,32 +1027,50 @@ io.on("connection", (socket) => {
         socket.emit("game:word-rejected", validation.reason);
 
         const errorMessage = createMessage(
-          `❌ ${user.name}: "${word}" - ${validation.reason}`,
+          `${user.name}: "${word}" - ${validation.reason}`,
           user,
           "system"
         );
         gameState.messages.push(errorMessage);
         io.emit("message:received", errorMessage);
 
-        // IMPORTANT: Ne pas passer la bombe si le mot est invalide
         return;
       }
 
-      // Le mot est valide!
       gameState.game.bombState.usedWords.push(word.toUpperCase());
 
+      gameState.game.bombState.lastWordLength = word.length;
+      gameState.game.bombState.timeWhenWordSubmitted =
+        gameState.game.bombState.timeRemaining;
+
+      const timeUsedPercent = (
+        ((gameState.game.bombState.maxTime -
+          gameState.game.bombState.timeRemaining) /
+          gameState.game.bombState.maxTime) *
+        100
+      ).toFixed(0);
+      const bonusInfo =
+        word.length >= 8
+          ? " 🎯 +3s pour le suivant!"
+          : word.length >= 6
+          ? " ⭐ +2s pour le suivant!"
+          : word.length <= 4
+          ? " ⚡ -2s pour le suivant!"
+          : "";
+      const speedInfo =
+        timeUsedPercent < 30 ? " 🔥 Trop rapide! -3s pour le suivant!" : "";
+
       const successMessage = createMessage(
-        `✅ ${user.name} a trouvé: "${word.toUpperCase()}"`,
+        `${
+          user.name
+        } a trouvé: "${word.toUpperCase()}"${bonusInfo}${speedInfo}`,
         user,
         "system"
       );
       gameState.messages.push(successMessage);
       io.emit("message:received", successMessage);
 
-      // Arrêter le timer de la bombe avant de passer au joueur suivant
       clearInterval(gameState.bombTimer);
-
-      // Passer au joueur suivant
       nextPlayer();
 
       console.log(`${user.name} submitted valid word: ${word}`);
@@ -1032,8 +1079,6 @@ io.on("connection", (socket) => {
       socket.emit("error", "Erreur lors de la soumission du mot");
     }
   });
-
-  // ========== END GAME EVENTS ==========
 
   socket.on("disconnect", (reason) => {
     try {
@@ -1055,6 +1100,27 @@ io.on("connection", (socket) => {
         socket.broadcast.emit("message:received", systemMessage);
 
         broadcastUsersList();
+
+        if (gameState.game.status === "playing") {
+          const remainingUsers = Array.from(gameState.users.values());
+          if (remainingUsers.length < 2) {
+            stopGame();
+            const gameStopMessage = createMessage(
+              "⏹️ Partie arrêtée : pas assez de joueurs",
+              remainingUsers[0] || user,
+              "system"
+            );
+            gameState.messages.push(gameStopMessage);
+            io.emit("message:received", gameStopMessage);
+          } else {
+            const alivePlayers = gameState.game.players.filter(
+              (p) => p.isAlive && gameState.users.has(p.socketId)
+            );
+            if (alivePlayers.length <= 1) {
+              endGame(alivePlayers[0] || null);
+            }
+          }
+        }
 
         console.log(`User disconnected: ${user.name} (${reason})`);
       }

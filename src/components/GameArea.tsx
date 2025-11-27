@@ -33,7 +33,6 @@ export default function GameArea({
   );
   const alivePlayers = game.players.filter((p) => p.isAlive);
 
-  // Animation de la bombe quand le temps est bas
   useEffect(() => {
     if (game.bombState.timeRemaining <= 5 && game.bombState.timeRemaining > 0) {
       setShakeAnimation(true);
@@ -42,11 +41,9 @@ export default function GameArea({
     }
   }, [game.bombState.timeRemaining]);
 
-  // Animation d'erreur et focus sur l'input
   useEffect(() => {
     if (errorMessage) {
       setErrorAnimation(true);
-      // Garder le focus sur l'input
       inputRef.current?.focus();
 
       const timer = setTimeout(() => {
@@ -99,10 +96,10 @@ export default function GameArea({
         {currentUser.isAdmin ? (
           <button
             onClick={onStartGame}
-            disabled={alivePlayers.length < 2}
+            disabled={game.players.length < 2}
             className="bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 disabled:from-gray-500 disabled:to-gray-600 text-white font-bold py-4 px-8 rounded-xl transition-all transform hover:scale-105 disabled:scale-100 shadow-lg"
           >
-            {alivePlayers.length < 2
+            {game.players.length < 2
               ? "Attendez au moins 2 joueurs"
               : "🚀 Démarrer la partie"}
           </button>
@@ -117,7 +114,7 @@ export default function GameArea({
 
         <div className="mt-8 text-white/60 text-sm">
           <p className="font-semibold mb-2">
-            Joueurs prêts: {alivePlayers.length}
+            Joueurs prêts: {game.players.length}
           </p>
           <div className="flex flex-wrap gap-2 justify-center">
             {game.players.map((player) => (
@@ -205,7 +202,6 @@ export default function GameArea({
 
   return (
     <div className="bg-white/10 backdrop-blur-lg rounded-2xl border border-white/20 p-6 h-full flex flex-col">
-      {/* Header avec scores */}
       <div className="flex justify-between items-center mb-6">
         <div className="flex items-center space-x-4">
           <div className="flex items-center space-x-2 bg-white/10 px-4 py-2 rounded-lg">
@@ -228,9 +224,7 @@ export default function GameArea({
         )}
       </div>
 
-      {/* Zone centrale de jeu */}
       <div className="flex-1 flex flex-col items-center justify-center space-y-8">
-        {/* Bombe et Timer */}
         <div className={`relative ${shakeAnimation ? "animate-shake" : ""}`}>
           <Bomb
             size={getBombSize()}
@@ -243,7 +237,6 @@ export default function GameArea({
           </div>
         </div>
 
-        {/* Syllabe courante */}
         <div className="bg-gradient-to-br from-purple-500/30 to-pink-500/30 border-2 border-white/40 rounded-3xl p-8 shadow-2xl">
           <div className="text-center">
             <p className="text-white/80 text-lg mb-2">
@@ -255,7 +248,6 @@ export default function GameArea({
           </div>
         </div>
 
-        {/* Joueur actif */}
         {activePlayer && (
           <div
             className={`text-center ${isActivePlayer ? "animate-pulse" : ""}`}
@@ -291,10 +283,8 @@ export default function GameArea({
           </div>
         )}
 
-        {/* Input pour soumettre un mot */}
         {isActivePlayer && (
           <form onSubmit={handleSubmit} className="w-full max-w-md space-y-3">
-            {/* Message d'erreur avec animation */}
             {errorMessage && (
               <div
                 className={`bg-red-500/90 border-2 border-red-400 text-white px-4 py-3 rounded-lg text-center font-medium shadow-lg ${
@@ -334,7 +324,6 @@ export default function GameArea({
           </form>
         )}
 
-        {/* Mots déjà utilisés */}
         {game.bombState.usedWords.length > 0 && (
           <div className="w-full max-w-2xl">
             <p className="text-white/60 text-sm mb-2">Mots déjà utilisés:</p>

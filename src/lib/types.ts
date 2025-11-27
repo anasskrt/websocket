@@ -35,6 +35,8 @@ export interface BombState {
   activePlayerId: string | null;
   usedWords: string[];
   roundNumber: number;
+  lastWordLength?: number;
+  timeWhenWordSubmitted?: number;
 }
 
 export interface BoomPartyGame {

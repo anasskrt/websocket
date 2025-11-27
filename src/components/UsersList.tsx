@@ -137,7 +137,6 @@ export default function UsersList({
 
         {users.length === 0 && (
           <div className="text-center py-8">
-            <div className="text-white/40 text-6xl mb-4">👻</div>
             <p className="text-white/60">Aucun joueur connecté</p>
             <p className="text-white/40 text-sm mt-2">
               Soyez le premier à rejoindre la partie !

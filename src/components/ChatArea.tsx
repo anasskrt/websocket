@@ -1,8 +1,7 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
 import { Message, User } from '@/lib/types';
-import { formatTime, getAvatarUrl } from '@/lib/utils';
-import { Send, MessageCircle } from 'lucide-react';
+import { formatTime, getAvatarUrl } from "@/lib/utils";
 
 interface ChatAreaProps {
   messages: Message[];
@@ -10,30 +9,34 @@ interface ChatAreaProps {
   onSendMessage: (content: string) => void;
 }
 
-export default function ChatArea({ messages, currentUser, onSendMessage }: ChatAreaProps) {
-  const [newMessage, setNewMessage] = useState('');
+export default function ChatArea({
+  messages,
+  currentUser,
+  onSendMessage,
+}: ChatAreaProps) {
+  const [newMessage, setNewMessage] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (newMessage.trim()) {
       onSendMessage(newMessage.trim());
-      setNewMessage('');
+      setNewMessage("");
     }
   };
 
-  const getMessageTypeStyle = (type: Message['type']) => {
+  const getMessageTypeStyle = (type: Message["type"]) => {
     switch (type) {
-      case 'system':
-        return 'bg-yellow-500/20 border-yellow-400/50 text-yellow-100';
-      case 'private':
-        return 'bg-purple-500/20 border-purple-400/50 text-purple-100';
+      case "system":
+        return "bg-yellow-500/20 border-yellow-400/50 text-yellow-100";
+      case "private":
+        return "bg-purple-500/20 border-purple-400/50 text-purple-100";
       default:
-        return 'bg-white/10 border-white/20 text-white';
+        return "bg-white/10 border-white/20 text-white";
     }
   };
 
@@ -41,7 +44,13 @@ export default function ChatArea({ messages, currentUser, onSendMessage }: ChatA
     <div className="bg-white/10 backdrop-blur-lg rounded-2xl border border-white/20 h-full flex flex-col">
       <div className="p-4 border-b border-white/20">
         <h3 className="text-white font-bold text-lg flex items-center space-x-2">
-          <MessageCircle size={20} />
+          <img
+            src="https://api.iconify.design/feather:message-circle.svg?color=white"
+            alt="Chat"
+            width={20}
+            height={20}
+            className="inline-block"
+          />
           <span>Chat Global</span>
           <span className="bg-green-500 text-white text-sm px-2 py-1 rounded-full">
             {messages.length}
@@ -52,7 +61,6 @@ export default function ChatArea({ messages, currentUser, onSendMessage }: ChatA
       <div className="flex-1 overflow-y-auto p-4 space-y-3 max-h-[calc(100vh-300px)] scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent">
         {messages.length === 0 ? (
           <div className="text-center py-12">
-            <div className="text-white/40 text-6xl mb-3">💬</div>
             <p className="text-white/60 text-sm">
               Aucun message pour le moment
             </p>
@@ -101,10 +109,8 @@ export default function ChatArea({ messages, currentUser, onSendMessage }: ChatA
                 )}
 
                 <div className={`${isSystem ? "text-center font-medium" : ""}`}>
-                  {isSystem && <span className="mr-2">🔔</span>}
-                  {message.type === "private" && (
-                    <span className="mr-2">🔒</span>
-                  )}
+                  {isSystem}
+                  {message.type === "private"}
                   {message.content}
                 </div>
 
@@ -133,7 +139,13 @@ export default function ChatArea({ messages, currentUser, onSendMessage }: ChatA
             disabled={!newMessage.trim()}
             className="bg-cyan-500 hover:bg-cyan-600 disabled:bg-gray-500 disabled:cursor-not-allowed text-white px-6 py-3 rounded-lg transition-colors flex items-center justify-center"
           >
-            <Send size={20} />
+            <img
+              src="https://api.iconify.design/feather:send.svg?color=white"
+              alt="Send"
+              width={20}
+              height={20}
+              className="inline-block"
+            />
           </button>
         </form>
       </div>

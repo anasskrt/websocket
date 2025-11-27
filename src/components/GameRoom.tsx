@@ -83,7 +83,6 @@ export default function GameRoom({ user, onLogout }: GameRoomProps) {
 
     socketManager.onError((error: string) => {
       console.error("Socket error:", error);
-      // Si l'erreur contient une indication d'expulsion, afficher un modal
       const lower = (error || "").toLowerCase();
       if (
         lower.includes("expuls") ||
@@ -172,7 +171,6 @@ export default function GameRoom({ user, onLogout }: GameRoomProps) {
     );
   }
 
-  // Modal d'expulsion
   if (expelledMessage) {
     return (
       <div className="fixed inset-0 flex items-center justify-center bg-black/60 z-50">

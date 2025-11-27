@@ -23,7 +23,6 @@ export default function GameSettings({
   const [startingLives, setStartingLives] = useState(3);
   const [errorMsg, setErrorMsg] = useState("");
 
-  // Synchroniser avec les paramètres du jeu
   useEffect(() => {
     if (game?.settings) {
       setMinTime(game.settings.minTime);
@@ -32,7 +31,6 @@ export default function GameSettings({
     }
   }, [game?.settings]);
 
-  // Effacer le message d'erreur après 3 secondes
   useEffect(() => {
     if (errorMsg) {
       const timer = setTimeout(() => setErrorMsg(""), 3000);
@@ -42,18 +40,17 @@ export default function GameSettings({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Valider les paramètres
+
     if (minTime >= maxTime) {
       setErrorMsg("Le temps minimum doit être inférieur au temps maximum");
       return;
     }
-    
+
     if (minTime < 5 || maxTime > 60) {
       setErrorMsg("Le temps doit être entre 5 et 60 secondes");
       return;
     }
-    
+
     if (startingLives < 1 || startingLives > 10) {
       setErrorMsg("Le nombre de vies doit être entre 1 et 10");
       return;
@@ -75,7 +72,6 @@ export default function GameSettings({
         ⚙️ Paramètres du jeu
       </h3>
 
-      {/* Message d'erreur */}
       {errorMsg && (
         <div className="bg-red-500/90 border-2 border-red-400 text-white px-3 py-2 rounded-lg text-sm mb-4 animate-shake">
           ⚠️ {errorMsg}
@@ -83,7 +79,6 @@ export default function GameSettings({
       )}
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        {/* Temps minimum de la bombe */}
         <div>
           <label className="block text-white text-sm font-medium mb-2">
             Temps minimum de la bombe: {minTime}s
@@ -114,7 +109,6 @@ export default function GameSettings({
           </div>
         </div>
 
-        {/* Temps maximum de la bombe */}
         <div>
           <label className="block text-white text-sm font-medium mb-2">
             Temps maximum de la bombe: {maxTime}s
@@ -145,7 +139,6 @@ export default function GameSettings({
           </div>
         </div>
 
-        {/* Nombre de vies */}
         <div>
           <label className="block text-white text-sm font-medium mb-2">
             Nombre de vies par joueur: {startingLives}
@@ -176,7 +169,6 @@ export default function GameSettings({
           </div>
         </div>
 
-        {/* Bouton de sauvegarde */}
         <button
           type="submit"
           disabled={isGameActive}
@@ -184,12 +176,15 @@ export default function GameSettings({
                    disabled:cursor-not-allowed text-white font-medium py-2 px-4 
                    rounded-lg transition-colors"
         >
-          {isGameActive ? "⚠️ Partie en cours" : "💾 Sauvegarder les paramètres"}
+          {isGameActive
+            ? "⚠️ Partie en cours"
+            : "💾 Sauvegarder les paramètres"}
         </button>
 
         {isGameActive && (
           <p className="text-xs text-yellow-300 text-center">
-            Les paramètres ne peuvent être modifiés que lorsque le jeu est arrêté
+            Les paramètres ne peuvent être modifiés que lorsque le jeu est
+            arrêté
           </p>
         )}
       </form>
