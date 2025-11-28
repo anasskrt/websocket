@@ -89,8 +89,11 @@ export default function GameArea({
           n&apos;explose ! 💣
         </p>
         <p className="text-white/60 mb-8 text-sm text-center">
-          Minimum {game.settings.minTime}s - Maximum {game.settings.maxTime}s
-          par tour
+          Temps de départ : {game.settings.baseTime}s
+          <br />
+          <span className="text-xs">
+            Le temps diminue progressivement à chaque tour
+          </span>
         </p>
 
         {currentUser.isAdmin ? (

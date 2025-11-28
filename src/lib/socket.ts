@@ -69,7 +69,6 @@ class SocketManager {
     }
   }
 
-  // Game events
   startGame() {
     if (this.socket) {
       this.socket.emit("game:start");
@@ -88,11 +87,7 @@ class SocketManager {
     }
   }
 
-  updateGameSettings(settings: {
-    minTime: number;
-    maxTime: number;
-    startingLives: number;
-  }) {
+  updateGameSettings(settings: { baseTime: number; startingLives: number }) {
     if (this.socket) {
       this.socket.emit("game:update-settings", settings);
     }

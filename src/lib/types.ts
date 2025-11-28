@@ -46,8 +46,7 @@ export interface BoomPartyGame {
   bombState: BombState;
   winner: User | null;
   settings: {
-    minTime: number;
-    maxTime: number;
+    baseTime: number;
     startingLives: number;
   };
 }
@@ -76,8 +75,7 @@ export interface SocketEvents {
   "game:stop": () => void;
   "game:submit-word": (word: string) => void;
   "game:update-settings": (settings: {
-    minTime: number;
-    maxTime: number;
+    baseTime: number;
     startingLives: number;
   }) => void;
 

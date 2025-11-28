@@ -7,8 +7,7 @@ interface GameSettingsProps {
   game: BoomPartyGame | null;
   isAdmin: boolean;
   onUpdateSettings: (settings: {
-    minTime: number;
-    maxTime: number;
+    baseTime: number;
     startingLives: number;
   }) => void;
 }
@@ -18,15 +17,13 @@ export default function GameSettings({
   isAdmin,
   onUpdateSettings,
 }: GameSettingsProps) {
-  const [minTime, setMinTime] = useState(10);
-  const [maxTime, setMaxTime] = useState(30);
+  const [baseTime, setBaseTime] = useState(30);
   const [startingLives, setStartingLives] = useState(3);
   const [errorMsg, setErrorMsg] = useState("");
 
   useEffect(() => {
     if (game?.settings) {
-      setMinTime(game.settings.minTime);
-      setMaxTime(game.settings.maxTime);
+      setBaseTime(game.settings.baseTime);
       setStartingLives(game.settings.startingLives);
     }
   }, [game?.settings]);
@@ -41,13 +38,8 @@ export default function GameSettings({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (minTime >= maxTime) {
-      setErrorMsg("Le temps minimum doit être inférieur au temps maximum");
-      return;
-    }
-
-    if (minTime < 5 || maxTime > 60) {
-      setErrorMsg("Le temps doit être entre 5 et 60 secondes");
+    if (baseTime < 10 || baseTime > 60) {
+      setErrorMsg("Le temps de base doit être entre 10 et 60 secondes");
       return;
     }
 
@@ -56,7 +48,7 @@ export default function GameSettings({
       return;
     }
 
-    onUpdateSettings({ minTime, maxTime, startingLives });
+    onUpdateSettings({ baseTime, startingLives });
     setErrorMsg("");
   };
 
@@ -81,44 +73,14 @@ export default function GameSettings({
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label className="block text-white text-sm font-medium mb-2">
-            Temps minimum de la bombe: {minTime}s
-          </label>
-          <input
-            type="range"
-            min="5"
-            max="30"
-            value={minTime}
-            onChange={(e) => setMinTime(Number(e.target.value))}
-            disabled={isGameActive}
-            className="w-full h-2 bg-white/20 rounded-lg appearance-none cursor-pointer 
-                     disabled:opacity-50 disabled:cursor-not-allowed
-                     [&::-webkit-slider-thumb]:appearance-none 
-                     [&::-webkit-slider-thumb]:w-4 
-                     [&::-webkit-slider-thumb]:h-4 
-                     [&::-webkit-slider-thumb]:rounded-full 
-                     [&::-webkit-slider-thumb]:bg-blue-500
-                     [&::-moz-range-thumb]:w-4 
-                     [&::-moz-range-thumb]:h-4 
-                     [&::-moz-range-thumb]:rounded-full 
-                     [&::-moz-range-thumb]:bg-blue-500
-                     [&::-moz-range-thumb]:border-0"
-          />
-          <div className="flex justify-between text-xs text-white/60 mt-1">
-            <span>5s</span>
-            <span>30s</span>
-          </div>
-        </div>
-
-        <div>
-          <label className="block text-white text-sm font-medium mb-2">
-            Temps maximum de la bombe: {maxTime}s
+            ⏱️ Temps de départ: {baseTime}s
           </label>
           <input
             type="range"
             min="10"
             max="60"
-            value={maxTime}
-            onChange={(e) => setMaxTime(Number(e.target.value))}
+            value={baseTime}
+            onChange={(e) => setBaseTime(Number(e.target.value))}
             disabled={isGameActive}
             className="w-full h-2 bg-white/20 rounded-lg appearance-none cursor-pointer 
                      disabled:opacity-50 disabled:cursor-not-allowed
@@ -137,6 +99,10 @@ export default function GameSettings({
             <span>10s</span>
             <span>60s</span>
           </div>
+          <p className="text-xs text-white/70 mt-2">
+            💡 Le temps diminue progressivement à chaque tour (-1.5s/tour). Les
+            bonus/malus s'appliquent selon votre performance.
+          </p>
         </div>
 
         <div>

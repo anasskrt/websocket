@@ -8,7 +8,7 @@ const frenchWordsSet = new Set(frenchWords.map((word) => word.toUpperCase()));
 const httpServer = createServer();
 const io = new Server(httpServer, {
   cors: {
-    origin: ["http://localhost:3000", "http://localhost:3002"],
+    origin: ["http://localhost:3000"],
     methods: ["GET", "POST"],
     credentials: true,
   },
@@ -33,8 +33,7 @@ const gameState = {
     },
     winner: null,
     settings: {
-      minTime: 10,
-      maxTime: 30,
+      baseTime: 30,
       startingLives: 3,
     },
   },
@@ -418,8 +417,7 @@ function calculateBombTime(
   lastWordLength = 0,
   lastTimeUsed = 0
 ) {
-  const baseTime = settings.maxTime;
-  const minTime = settings.minTime;
+  const baseTime = settings.baseTime;
 
   let calculatedTime = baseTime - Math.floor((roundNumber - 1) * 1.5);
 
@@ -440,17 +438,21 @@ function calculateBombTime(
     }
   }
 
-  return Math.max(minTime, Math.min(settings.maxTime, calculatedTime));
+  return Math.max(5, calculatedTime);
+}
+
+function removeAccents(str) {
+  return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 }
 
 function checkWordExists(word) {
-  const normalizedWord = word.toUpperCase().trim();
+  const normalizedWord = removeAccents(word.toUpperCase().trim());
   return frenchWordsSet.has(normalizedWord);
 }
 
 function validateWord(word, syllabe, usedWords) {
-  const normalizedWord = word.toUpperCase().trim();
-  const normalizedSyllabe = syllabe.toUpperCase();
+  const normalizedWord = removeAccents(word.toUpperCase().trim());
+  const normalizedSyllabe = removeAccents(syllabe.toUpperCase());
 
   if (normalizedWord.length < 4) {
     return { valid: false, reason: "Le mot doit contenir au moins 4 lettres" };
@@ -488,8 +490,8 @@ function initializeGame() {
     })),
     bombState: {
       currentLetter: getRandomSyllabe(),
-      timeRemaining: gameState.game.settings.maxTime,
-      maxTime: gameState.game.settings.maxTime,
+      timeRemaining: gameState.game.settings.baseTime,
+      maxTime: gameState.game.settings.baseTime,
       activePlayerId: alivePlayers[0]?.id || users[0]?.id,
       usedWords: [],
       roundNumber: 1,
@@ -962,12 +964,8 @@ io.on("connection", (socket) => {
         return;
       }
 
-      if (
-        settings.minTime < 5 ||
-        settings.maxTime > 60 ||
-        settings.minTime >= settings.maxTime
-      ) {
-        socket.emit("error", "Paramètres de temps invalides");
+      if (settings.baseTime < 10 || settings.baseTime > 60) {
+        socket.emit("error", "Temps de base invalide (10-60s)");
         return;
       }
 
@@ -977,15 +975,14 @@ io.on("connection", (socket) => {
       }
 
       gameState.game.settings = {
-        minTime: settings.minTime,
-        maxTime: settings.maxTime,
+        baseTime: settings.baseTime,
         startingLives: settings.startingLives,
       };
 
       broadcastGameState();
 
       const systemMessage = createMessage(
-        `${admin.name} a modifié les paramètres: ${settings.minTime}-${settings.maxTime}s, ${settings.startingLives} vies`,
+        `${admin.name} a modifié les paramètres: ${settings.baseTime}s de base, ${settings.startingLives} vies`,
         admin,
         "system"
       );
@@ -1037,7 +1034,9 @@ io.on("connection", (socket) => {
         return;
       }
 
-      gameState.game.bombState.usedWords.push(word.toUpperCase());
+      gameState.game.bombState.usedWords.push(
+        removeAccents(word.toUpperCase())
+      );
 
       gameState.game.bombState.lastWordLength = word.length;
       gameState.game.bombState.timeWhenWordSubmitted =

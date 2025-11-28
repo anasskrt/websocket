@@ -33,8 +33,7 @@ export default function GameRoom({ user, onLogout }: GameRoomProps) {
     },
     winner: null,
     settings: {
-      minTime: 10,
-      maxTime: 30,
+      baseTime: 30,
       startingLives: 3,
     },
   });
@@ -136,8 +135,7 @@ export default function GameRoom({ user, onLogout }: GameRoomProps) {
   };
 
   const handleUpdateSettings = (settings: {
-    minTime: number;
-    maxTime: number;
+    baseTime: number;
     startingLives: number;
   }) => {
     if (user.isAdmin) {
