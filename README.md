@@ -6,7 +6,7 @@ Ce projet est une application web développée avec Next.js et TypeScript.
 
 1. Clonez le dépôt :
    ```sh
-   git clone <url-du-repo>
+   git clone https://github.com/anasskrt/websocket
    ```
 2. Installez les dépendances :
    ```sh
